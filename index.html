@@ -47,20 +47,36 @@
         <div class="status-item"><strong>Livestock:</strong> <span id="livestock">5</span></div>
         <div class="status-item"><strong>Family:</strong> <span id="family">1</span></div>
         <div class="status-item"><strong>Piety:</strong> <span id="piety">50</span></div>
+        <div class="status-item">
+          <strong>Speed:</strong>
+          <select id="speed-select">
+            <option value="30">1 year / 30s (default)</option>
+            <option value="10">1 year / 10s</option>
+            <option value="5">1 year / 5s</option>
+            <option value="1">1 year / 1s (fast)</option>
+          </select>
+        </div>
       </div>
 
-      <div class="main-content">
-        <div id="narrative" class="narrative panel"></div>
-        <div id="choices" class="choices"></div>
+      <div class="layout">
+        <div class="map-container panel">
+          <h3>The Land of Israel</h3>
+          <canvas id="map-canvas" width="400" height="500"></canvas>
+        </div>
+
+        <div class="main-content">
+          <div id="narrative" class="narrative panel"></div>
+          <div id="choices" class="choices"></div>
+        </div>
       </div>
 
       <div class="actions panel">
-        <h3>Yearly Actions</h3>
+        <h3>Yearly Actions (available anytime)</h3>
         <button class="action-btn" data-action="farm">Tend the Fields / Flocks</button>
         <button class="action-btn" data-action="trade">Trade at the Market</button>
         <button class="action-btn" data-action="family">Family &amp; Household</button>
         <button class="action-btn" data-action="pray">Offer Sacrifice / Seek the Lord</button>
-        <button class="action-btn" data-action="advance">Advance the Year</button>
+        <button id="pause-btn">Pause / Resume Time</button>
       </div>
     </div>
 
