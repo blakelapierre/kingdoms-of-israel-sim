@@ -168,14 +168,29 @@ button:hover {
   min-height: 300px;
 }
 
-.narrative {
-  max-height: 320px;
+.timeline-panel {
+  max-height: 180px;
   overflow-y: auto;
-  min-height: 180px;
-  line-height: 1.5;
-  font-size: 1em;
-  white-space: pre-wrap;
-  background: #fff8e7;
+  font-size: 0.9em;
+  margin-bottom: 10px;
+}
+
+.timeline-section ul {
+  margin: 5px 0 10px 20px;
+  padding: 0;
+}
+
+.timeline-section li {
+  margin: 2px 0;
+}
+
+.past-event { color: #5d4037; }
+.upcoming-event { color: #1565c0; font-weight: bold; }
+
+.map-legend {
+  font-size: 0.8em;
+  margin-top: 8px;
+  text-align: left;
 }
 
 .choices {
