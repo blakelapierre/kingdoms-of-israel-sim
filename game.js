@@ -59,9 +59,13 @@ const TIMELINE = [
 
 function init() {
   document.getElementById('skip-intro').addEventListener('click', () => { clearTimeouts(); finishIntro(); });
+  document.getElementById('intro-prev').addEventListener('click', () => { clearTimeouts(); game.introIndex = Math.max(0, game.introIndex - 2); showNextIntro(); });
+  document.getElementById('intro-next').addEventListener('click', () => { clearTimeouts(); showNextIntro(); });
   document.getElementById('start-btn').addEventListener('click', startGame);
   document.getElementById('host-btn').addEventListener('click', hostRoom);
   document.getElementById('join-btn').addEventListener('click', joinRoom);
+  document.getElementById('webrtc-host-btn').addEventListener('click', createWebRTCOffer);
+  document.getElementById('webrtc-set-answer').addEventListener('click', setWebRTCAnswer);
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => handleAction(btn.dataset.action));
   });
@@ -72,11 +76,15 @@ function init() {
   });
   document.getElementById('pause-btn').addEventListener('click', togglePause);
 
-  // Priority checkboxes
   ['farm','trade','family','pray'].forEach(p => {
     const el = document.getElementById('prio-' + p);
     if (el) el.addEventListener('change', () => { game.priorities[p] = el.checked; });
   });
+
+  // Main game URL QR
+  const url = window.location.href.split('?')[0];
+  document.getElementById('main-url').textContent = url;
+  new QRCode(document.getElementById('main-qr'), { text: url, width: 128, height: 128 });
 
   playIntro();
 }
@@ -89,12 +97,17 @@ function playIntro() {
 function showNextIntro() {
   const content = document.getElementById('intro-content');
   const progress = document.getElementById('intro-progress');
+  const visual = document.getElementById('intro-visual');
   if (game.introIndex >= INTRO_EVENTS.length) { finishIntro(); return; }
   const ev = INTRO_EVENTS[game.introIndex];
   content.innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
-  progress.textContent = `Event ${game.introIndex + 1} of ${INTRO_EVENTS.length}`;
+  progress.textContent = `Segment ${game.introIndex + 1} of ${INTRO_EVENTS.length}`;
+  // Simple graphical "animation" — colored banner with key phrase
+  const colors = ['#5d4037','#6d4c41','#8d6e63','#a1887f','#4e342e','#3e2723','#bf360c'];
+  visual.style.background = colors[game.introIndex % colors.length];
+  visual.textContent = ev.title.split(' ').slice(0, 3).join(' ');
   game.introIndex++;
-  introTimer = setTimeout(showNextIntro, 4200);
+  introTimer = setTimeout(showNextIntro, 7000);
 }
 function clearTimeouts() { if (introTimer) clearTimeout(introTimer); }
 function finishIntro() {
@@ -111,6 +124,10 @@ function hostRoom() {
     document.getElementById('room-info').classList.remove('hidden');
     document.getElementById('mp-status').textContent = 'Hosting. Waiting for players...';
     document.getElementById('mp-indicator').textContent = 'Host';
+    // QR for room
+    const qrEl = document.getElementById('room-qr');
+    qrEl.innerHTML = '';
+    new QRCode(qrEl, { text: window.location.href.split('?')[0] + '?room=' + game.roomCode, width: 128, height: 128 });
   });
   game.peer.on('connection', conn => {
     game.connections.push(conn);
@@ -158,8 +175,36 @@ function handlePeerData(data) {
     addNarrative(`[Shared] ${data.text}`);
   }
 }
-function broadcast(msg) {
-  game.connections.forEach(c => { if (c.open) c.send(msg); });
+// Pure WebRTC (no PeerJS) — simple 1:1 offer/answer for demonstration
+let webrtcPC = null;
+function createWebRTCOffer() {
+  webrtcPC = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  const dc = webrtcPC.createDataChannel('game');
+  dc.onopen = () => document.getElementById('mp-status').textContent = 'WebRTC data channel open!';
+  dc.onmessage = e => handlePeerData(JSON.parse(e.data));
+  game.connections.push({ open: true, send: msg => dc.send(JSON.stringify(msg)) });
+
+  webrtcPC.onicecandidate = () => {
+    if (webrtcPC.localDescription) {
+      const offer = webrtcPC.localDescription.sdp;
+      document.getElementById('webrtc-offer').value = offer;
+      document.getElementById('webrtc-offer-box').classList.remove('hidden');
+      const qr = document.getElementById('webrtc-offer-qr');
+      qr.innerHTML = '';
+      // QR of a shortened note; full SDP is long for QR so we show text primarily
+      new QRCode(qr, { text: 'webrtc-offer-ready', width: 96, height: 96 });
+    }
+  };
+  webrtcPC.createOffer().then(o => webrtcPC.setLocalDescription(o));
+  document.getElementById('mp-status').textContent = 'Creating offer... copy the SDP or scan QR and send to joiner.';
+}
+
+function setWebRTCAnswer() {
+  const answerSdp = document.getElementById('webrtc-answer').value.trim();
+  if (!webrtcPC || !answerSdp) return;
+  webrtcPC.setRemoteDescription({ type: 'answer', sdp: answerSdp })
+    .then(() => document.getElementById('mp-status').textContent = 'Answer set. Connection should establish.')
+    .catch(err => document.getElementById('mp-status').textContent = 'Error: ' + err);
 }
 
 function startGame() {

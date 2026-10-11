@@ -16,9 +16,14 @@
     <!-- Intro Animation Screen -->
     <div id="intro-screen" class="panel">
       <h2>From the Patriarchs to the Judges</h2>
+      <div id="intro-visual" class="intro-visual"></div>
       <div id="intro-content" class="narrative"></div>
       <div id="intro-progress"></div>
-      <button id="skip-intro">Skip to Game</button>
+      <div class="intro-controls">
+        <button id="intro-prev">← Previous</button>
+        <button id="intro-next">Next →</button>
+        <button id="skip-intro">Skip to Game</button>
+      </div>
     </div>
 
     <!-- Start / Multiplayer Screen -->
@@ -27,14 +32,32 @@
       <p>The age of the Judges is fading. Philistines press from the west. The tribes cry out for a king.</p>
       
       <div class="mp-section">
-        <h3>Multiplayer (PeerJS / WebRTC)</h3>
-        <button id="host-btn">Host a Village Room</button>
+        <h3>Share & Multiplayer</h3>
+        <p><strong>Share this game:</strong></p>
+        <div id="main-qr" class="qr-box"></div>
+        <p id="main-url" style="font-size:0.85em;word-break:break-all;"></p>
+
+        <hr>
+        <h4>PeerJS (quick rooms)</h4>
+        <button id="host-btn">Host a Village Room (PeerJS)</button>
         <div id="room-info" class="hidden">
           <p>Share this room code: <strong id="room-code"></strong></p>
-          <p>Or join with a code below.</p>
+          <div id="room-qr" class="qr-box"></div>
         </div>
-        <label>Join Room: <input type="text" id="join-code" placeholder="Enter room code" maxlength="12"></label>
-        <button id="join-btn">Join Village</button>
+        <label>Join PeerJS Room: <input type="text" id="join-code" placeholder="Room code" maxlength="12"></label>
+        <button id="join-btn">Join</button>
+
+        <hr>
+        <h4>Pure WebRTC (no PeerJS — manual offer/answer)</h4>
+        <p>For 1:1 or small groups without PeerJS. Host creates an offer, shares it (QR or text), joiner creates an answer.</p>
+        <button id="webrtc-host-btn">Create WebRTC Offer</button>
+        <div id="webrtc-offer-box" class="hidden">
+          <textarea id="webrtc-offer" rows="4" style="width:100%;font-size:0.75em;"></textarea>
+          <div id="webrtc-offer-qr" class="qr-box"></div>
+        </div>
+        <label>Paste Answer SDP:</label>
+        <textarea id="webrtc-answer" rows="3" style="width:100%;font-size:0.75em;"></textarea>
+        <button id="webrtc-set-answer">Set Remote Answer</button>
         <p id="mp-status"></p>
       </div>
 
@@ -121,6 +144,7 @@
     </footer>
   </div>
   <script src="peerjs.min.js"></script>
+  <script src="qrcode.min.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
