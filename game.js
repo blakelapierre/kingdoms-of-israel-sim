@@ -1,12 +1,29 @@
 // Kingdoms of Israel: A Commoner's Tale
-// Core simulation engine
+// Real-time simulation with map and limited log
 
 const game = {
   player: null,
   year: 1050, // BC
   started: false,
   currentEvent: null,
-  historicalEvents: []
+  paused: false,
+  speedSecondsPerYear: 30, // default
+  yearTimer: null,
+  narrativeLines: [],
+  maxNarrativeLines: 40,
+  households: [] // for multiplayer later
+};
+
+// Approximate positions on a simple north-south map (canvas coords)
+const REGION_POSITIONS = {
+  Manasseh: { x: 200, y: 120, color: '#8d6e63' },
+  Ephraim: { x: 180, y: 180, color: '#6d4c41' },
+  Benjamin: { x: 190, y: 230, color: '#5d4037' },
+  Judah: { x: 200, y: 320, color: '#4e342e' },
+  Jerusalem: { x: 195, y: 250 },
+  Samaria: { x: 190, y: 160 },
+  Dan: { x: 160, y: 60 },
+  Beersheba: { x: 210, y: 420 }
 };
 
 // Historical timeline (approximate BC years)
@@ -35,6 +52,11 @@ function init() {
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => handleAction(btn.dataset.action));
   });
+  document.getElementById('speed-select').addEventListener('change', (e) => {
+    game.speedSecondsPerYear = parseInt(e.target.value, 10);
+    if (game.started && !game.paused) restartYearTimer();
+  });
+  document.getElementById('pause-btn').addEventListener('click', togglePause);
 }
 
 function startGame() {
@@ -58,19 +80,41 @@ function startGame() {
 
   game.year = 1050;
   game.started = true;
+  game.paused = false;
+  game.households = [{ name: name, region: region, isLocal: true }];
 
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
 
   updateStatus();
-  addNarrative(`You are ${name}, a young ${profession} in the territory of ${region}. The land is divided among the tribes. The Philistines are a constant threat, and the people speak of needing a strong leader.\n\nYour household is small. You have some grain, a few animals, and the strength of your youth. The year is 1050 BC.`);
+  addNarrative(`You are ${name}, a young ${profession} in the territory of ${region}. The land is divided among the tribes. The Philistines are a constant threat, and the people speak of needing a strong leader.\n\nYour household is small. You have some grain, a few animals, and the strength of your youth. The year is 1050 BC.\n\nTime now advances automatically.`);
 
-  // Trigger the starting historical moment
   const startEvent = TIMELINE.find(e => e.year === 1050);
   if (startEvent) {
-    setTimeout(() => triggerHistoricalEvent(startEvent), 500);
+    setTimeout(() => triggerHistoricalEvent(startEvent), 800);
   }
-  showYearlyActions();
+
+  drawMap();
+  restartYearTimer();
+}
+
+function restartYearTimer() {
+  if (game.yearTimer) clearInterval(game.yearTimer);
+  if (game.paused || !game.started) return;
+  const ms = game.speedSecondsPerYear * 1000;
+  game.yearTimer = setInterval(advanceYear, ms);
+}
+
+function togglePause() {
+  game.paused = !game.paused;
+  document.getElementById('pause-btn').textContent = game.paused ? "Resume Time" : "Pause Time";
+  if (game.paused) {
+    if (game.yearTimer) clearInterval(game.yearTimer);
+    addNarrative("Time is paused.");
+  } else {
+    restartYearTimer();
+    addNarrative("Time resumes.");
+  }
 }
 
 function updateStatus() {
@@ -88,17 +132,18 @@ function updateStatus() {
 }
 
 function addNarrative(text) {
+  const lines = text.split('\n');
+  game.narrativeLines.push(...lines);
+  if (game.narrativeLines.length > game.maxNarrativeLines) {
+    game.narrativeLines = game.narrativeLines.slice(-game.maxNarrativeLines);
+  }
   const el = document.getElementById('narrative');
-  el.textContent += (el.textContent ? '\n\n' : '') + text;
+  el.textContent = game.narrativeLines.join('\n');
   el.scrollTop = el.scrollHeight;
 }
 
 function clearChoices() {
   document.getElementById('choices').innerHTML = '';
-}
-
-function showYearlyActions() {
-  clearChoices();
 }
 
 function handleAction(action) {
@@ -110,7 +155,7 @@ function handleAction(action) {
       const farmGain = p.profession === 'farmer' ? 8 + Math.floor(Math.random()*6) : 3 + Math.floor(Math.random()*4);
       p.food += farmGain;
       p.health = Math.min(100, p.health + 2);
-      addNarrative(`You spend the year tending your ${p.profession === 'shepherd' ? 'flocks' : 'fields'}. You gain ${farmGain} measures of food. The rains were adequate this season.`);
+      addNarrative(`You spend time tending your ${p.profession === 'shepherd' ? 'flocks' : 'fields'}. You gain ${farmGain} measures of food.`);
       break;
     case 'trade':
       if (p.food >= 5) {
@@ -118,23 +163,19 @@ function handleAction(action) {
         p.food -= sold;
         const silver = Math.floor(sold * (1.5 + Math.random()));
         p.wealth += silver;
-        addNarrative(`You take goods to the local market or a nearby town. You sell ${sold} measures and gain ${silver} shekels.`);
+        addNarrative(`You take goods to the local market. You sell ${sold} measures and gain ${silver} shekels.`);
       } else {
-        addNarrative("You have little surplus to trade this year.");
+        addNarrative("You have little surplus to trade right now.");
       }
       break;
     case 'family':
-      if (p.age >= 18 && p.family < 8 && p.wealth >= 10) {
-        if (Math.random() > 0.4) {
-          p.family += 1;
-          p.wealth -= 8;
-          p.food -= 3;
-          addNarrative("A child is born to your household. The family grows, but so do the mouths to feed.");
-        } else {
-          addNarrative("You tend to household matters—repairs, weaving, teaching the young. The family is steady.");
-        }
+      if (p.age >= 18 && p.family < 8 && p.wealth >= 10 && Math.random() > 0.5) {
+        p.family += 1;
+        p.wealth -= 8;
+        p.food -= 3;
+        addNarrative("A child is born to your household. The family grows, but so do the mouths to feed.");
       } else {
-        addNarrative("You look after the household. There is always work: grinding grain, mending tools, caring for the young or elderly.");
+        addNarrative("You tend to household matters—repairs, weaving, teaching the young.");
       }
       break;
     case 'pray':
@@ -143,26 +184,24 @@ function handleAction(action) {
         p.health = Math.min(100, p.health + 5);
         addNarrative("You offer a sacrifice and seek the Lord. You feel a measure of peace and strength.");
       } else {
-        addNarrative("You go up to the high place or local shrine (or later, toward Jerusalem) and offer what you can. The priests accept your gift.");
+        addNarrative("You go up to the high place or local shrine and offer what you can.");
       }
       break;
-    case 'advance':
-      advanceYear();
-      return;
-  }
-  p.food = Math.max(0, p.food - (2 + Math.floor(p.family / 2)));
-  if (p.food < 3) {
-    p.health -= 10;
-    addNarrative("Food is short. Hunger weakens the household.");
   }
   updateStatus();
   checkDeath();
 }
 
 function advanceYear() {
-  if (game.currentEvent) return;
+  if (game.currentEvent || game.paused) return;
   game.year -= 1;
   game.player.age += 1;
+
+  game.player.food = Math.max(0, game.player.food - (2 + Math.floor(game.player.family / 2)));
+  if (game.player.food < 3) {
+    game.player.health -= 8;
+    addNarrative("Food is short. Hunger weakens the household.");
+  }
 
   const event = TIMELINE.find(e => e.year === game.year);
   if (event) {
@@ -170,18 +209,14 @@ function advanceYear() {
     return;
   }
 
-  if (Math.random() < 0.35) {
+  if (Math.random() < 0.25) {
     triggerPersonalEvent();
     return;
   }
 
-  addNarrative(`The year ${game.year} BC passes. The seasons turn. Life continues in the village.`);
-  game.player.food = Math.max(0, game.player.food - (2 + Math.floor(game.player.family / 2)));
-  if (game.player.food < 3) {
-    game.player.health -= 8;
-    addNarrative("Food is short. Hunger weakens the household.");
-  }
+  addNarrative(`The year ${game.year} BC passes. The seasons turn.`);
   updateStatus();
+  drawMap();
   checkDeath();
 }
 
@@ -204,7 +239,9 @@ function triggerHistoricalEvent(event) {
         game.player.region = "Judah";
         game.player.kingdom = "Kingdom of Judah";
         game.player.wealth -= 15;
+        game.households[0].region = "Judah";
         addNarrative("You journey south with what you can carry. The road is hard, but you settle in Judah.");
+        drawMap();
       }}
     ]);
     return;
@@ -217,17 +254,19 @@ function triggerHistoricalEvent(event) {
         game.player.kingdom = "Kingdom of Judah";
         game.player.wealth = Math.max(0, game.player.wealth - 20);
         game.player.livestock = Math.floor(game.player.livestock / 2);
-        addNarrative("You abandon much of your land and flee with your family to the safety of Judah. Many others do the same.");
+        game.households[0].region = "Judah";
+        addNarrative("You abandon much of your land and flee with your family to the safety of Judah.");
+        drawMap();
       }},
       { text: "Stay and submit to Assyrian rule", effect: () => {
         game.player.kingdom = "Assyrian Province";
         game.player.health -= 15;
-        addNarrative("You remain. Foreign settlers arrive. Taxes are heavy, and the old ways are disrupted. Life becomes harder.");
+        addNarrative("You remain. Foreign settlers arrive. Taxes are heavy.");
       }},
       { text: "Hide in the hills", effect: () => {
         game.player.health -= 20;
         game.player.food = Math.max(0, game.player.food - 10);
-        addNarrative("You take your family into the hills and caves for a time. It is a hard existence, but you avoid the worst of the deportations.");
+        addNarrative("You take your family into the hills and caves for a time.");
       }}
     ]);
     return;
@@ -302,6 +341,7 @@ function showChoices(choices) {
       updateStatus();
       checkDeath();
       addNarrative("The year continues...");
+      drawMap();
     });
     container.appendChild(btn);
   });
@@ -311,9 +351,62 @@ function checkDeath() {
   const p = game.player;
   if (p.health <= 0 || p.age > 70 || game.year < 690) {
     let reason = p.health <= 0 ? "from hardship and illness" : p.age > 70 ? "of old age" : "as the simulation reaches its end around 700 BC";
-    addNarrative(`\n\n*** Your life ends ${reason}. ***\nYou lived through the age of the judges, the united kingdom, the division, and the fall of the north. Your family, if any remain, carries on the memory of these years.\n\nFinal status: Age ${p.age}, Wealth ${p.wealth}, Family ${p.family}, Piety ${p.piety}.\n\nRefresh the page to live another life.`);
-    document.querySelectorAll('.action-btn').forEach(b => b.disabled = true);
+    addNarrative(`\n\n*** Your life ends ${reason}. ***\nYou lived through the age of the judges, the united kingdom, the division, and the fall of the north.\n\nFinal status: Age ${p.age}, Wealth ${p.wealth}, Family ${p.family}, Piety ${p.piety}.\n\nRefresh the page to live another life.`);
+    if (game.yearTimer) clearInterval(game.yearTimer);
+    document.querySelectorAll('.action-btn, #pause-btn').forEach(b => b.disabled = true);
   }
+}
+
+function drawMap() {
+  const canvas = document.getElementById('map-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = '#c8a882';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = '#6d4c41';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(80, 40);
+  ctx.lineTo(320, 50);
+  ctx.lineTo(340, 450);
+  ctx.lineTo(60, 440);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fillStyle = '#d4b896';
+  ctx.fill();
+
+  Object.entries(REGION_POSITIONS).forEach(([name, pos]) => {
+    if (pos.color) {
+      ctx.fillStyle = pos.color;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff8e1';
+      ctx.font = 'bold 11px Georgia';
+      ctx.textAlign = 'center';
+      ctx.fillText(name.slice(0, 8), pos.x, pos.y + 4);
+    }
+  });
+
+  if (game.player) {
+    const pos = REGION_POSITIONS[game.player.region] || REGION_POSITIONS.Ephraim;
+    ctx.fillStyle = '#c62828';
+    ctx.beginPath();
+    ctx.arc(pos.x + 25, pos.y - 20, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3e2723';
+    ctx.font = '10px Georgia';
+    ctx.textAlign = 'left';
+    ctx.fillText(game.player.name, pos.x + 35, pos.y - 16);
+  }
+
+  ctx.fillStyle = '#3e2723';
+  ctx.font = 'bold 14px Georgia';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${game.year} BC`, canvas.width / 2, 30);
 }
 
 document.addEventListener('DOMContentLoaded', init);
