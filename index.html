@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingdoms of Israel: A Commoner's Tale</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Kingdoms of Israel</h1>
+      <p class="subtitle">A Commoner's Tale ~ 1050–700 BC</p>
+    </header>
+
+    <div id="start-screen" class="panel">
+      <h2>Begin Your Life</h2>
+      <p>The year is 1050 BC. The age of the Judges is fading. Philistines press from the west, and the tribes of Israel cry out for a king. You are a young person of the land.</p>
+      <label>Name: <input type="text" id="player-name" value="Eliab" maxlength="20"></label>
+      <label>Profession:
+        <select id="profession">
+          <option value="farmer">Farmer (wheat &amp; barley)</option>
+          <option value="shepherd">Shepherd (sheep &amp; goats)</option>
+          <option value="merchant">Small Merchant (trade goods)</option>
+        </select>
+      </label>
+      <label>Starting Tribe/Region:
+        <select id="region">
+          <option value="Ephraim">Ephraim (central hills)</option>
+          <option value="Judah">Judah (southern hills)</option>
+          <option value="Benjamin">Benjamin (near the highlands)</option>
+          <option value="Manasseh">Manasseh (north-central)</option>
+        </select>
+      </label>
+      <button id="start-btn">Begin Life in the Land</button>
+    </div>
+
+    <div id="game-screen" class="hidden">
+      <div class="status-bar">
+        <div class="status-item"><strong>Year:</strong> <span id="year">1050 BC</span></div>
+        <div class="status-item"><strong>Age:</strong> <span id="age">16</span></div>
+        <div class="status-item"><strong>Location:</strong> <span id="location">Ephraim</span></div>
+        <div class="status-item"><strong>Kingdom:</strong> <span id="kingdom">Tribal Confederation</span></div>
+        <div class="status-item"><strong>Health:</strong> <span id="health">100</span></div>
+        <div class="status-item"><strong>Wealth:</strong> <span id="wealth">20</span> shekels</div>
+        <div class="status-item"><strong>Food:</strong> <span id="food">15</span> measures</div>
+        <div class="status-item"><strong>Livestock:</strong> <span id="livestock">5</span></div>
+        <div class="status-item"><strong>Family:</strong> <span id="family">1</span></div>
+        <div class="status-item"><strong>Piety:</strong> <span id="piety">50</span></div>
+      </div>
+
+      <div class="main-content">
+        <div id="narrative" class="narrative panel"></div>
+        <div id="choices" class="choices"></div>
+      </div>
+
+      <div class="actions panel">
+        <h3>Yearly Actions</h3>
+        <button class="action-btn" data-action="farm">Tend the Fields / Flocks</button>
+        <button class="action-btn" data-action="trade">Trade at the Market</button>
+        <button class="action-btn" data-action="family">Family &amp; Household</button>
+        <button class="action-btn" data-action="pray">Offer Sacrifice / Seek the Lord</button>
+        <button class="action-btn" data-action="advance">Advance the Year</button>
+      </div>
+    </div>
+
+    <footer>
+      <p>A historical simulation inspired by biblical accounts and Iron Age archaeology. Not a substitute for the scriptures.</p>
+    </footer>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
