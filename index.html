@@ -10,17 +10,40 @@
   <div class="container">
     <header>
       <h1>Kingdoms of Israel</h1>
-      <p class="subtitle">A Commoner's Tale ~ 1050–700 BC</p>
+      <p class="subtitle">A Commoner's Tale — From Jacob to the Fall of the North</p>
     </header>
 
-    <div id="start-screen" class="panel">
-      <h2>Begin Your Life</h2>
-      <p>The year is 1050 BC. The age of the Judges is fading. Philistines press from the west, and the tribes of Israel cry out for a king. You are a young person of the land.</p>
+    <!-- Intro Animation Screen -->
+    <div id="intro-screen" class="panel">
+      <h2>From the Patriarchs to the Judges</h2>
+      <div id="intro-content" class="narrative"></div>
+      <div id="intro-progress"></div>
+      <button id="skip-intro">Skip to Game</button>
+    </div>
+
+    <!-- Start / Multiplayer Screen -->
+    <div id="start-screen" class="panel hidden">
+      <h2>Begin Your Life (~1050 BC)</h2>
+      <p>The age of the Judges is fading. Philistines press from the west. The tribes cry out for a king.</p>
+      
+      <div class="mp-section">
+        <h3>Multiplayer (PeerJS / WebRTC)</h3>
+        <button id="host-btn">Host a Village Room</button>
+        <div id="room-info" class="hidden">
+          <p>Share this room code: <strong id="room-code"></strong></p>
+          <p>Or join with a code below.</p>
+        </div>
+        <label>Join Room: <input type="text" id="join-code" placeholder="Enter room code" maxlength="12"></label>
+        <button id="join-btn">Join Village</button>
+        <p id="mp-status"></p>
+      </div>
+
+      <hr>
       <label>Name: <input type="text" id="player-name" value="Eliab" maxlength="20"></label>
       <label>Profession:
         <select id="profession">
-          <option value="farmer">Farmer (wheat &amp; barley)</option>
-          <option value="shepherd">Shepherd (sheep &amp; goats)</option>
+          <option value="farmer">Farmer (wheat & barley)</option>
+          <option value="shepherd">Shepherd (sheep & goats)</option>
           <option value="merchant">Small Merchant (trade goods)</option>
         </select>
       </label>
@@ -35,6 +58,7 @@
       <button id="start-btn">Begin Life in the Land</button>
     </div>
 
+    <!-- Game Screen -->
     <div id="game-screen" class="hidden">
       <div class="status-bar">
         <div class="status-item"><strong>Year:</strong> <span id="year">1050 BC</span></div>
@@ -50,20 +74,20 @@
         <div class="status-item">
           <strong>Speed:</strong>
           <select id="speed-select">
-            <option value="30">1 year / 30s (default)</option>
+            <option value="30">1 year / 30s</option>
             <option value="10">1 year / 10s</option>
             <option value="5">1 year / 5s</option>
-            <option value="1">1 year / 1s (fast)</option>
+            <option value="1">1 year / 1s</option>
           </select>
         </div>
+        <div class="status-item" id="mp-indicator">Solo</div>
       </div>
 
       <div class="layout">
         <div class="map-container panel">
-          <h3>The Land of Israel</h3>
+          <h3>The Land</h3>
           <canvas id="map-canvas" width="400" height="500"></canvas>
         </div>
-
         <div class="main-content">
           <div id="narrative" class="narrative panel"></div>
           <div id="choices" class="choices"></div>
@@ -71,19 +95,20 @@
       </div>
 
       <div class="actions panel">
-        <h3>Yearly Actions (available anytime)</h3>
-        <button class="action-btn" data-action="farm">Tend the Fields / Flocks</button>
-        <button class="action-btn" data-action="trade">Trade at the Market</button>
-        <button class="action-btn" data-action="family">Family &amp; Household</button>
-        <button class="action-btn" data-action="pray">Offer Sacrifice / Seek the Lord</button>
+        <h3>Actions</h3>
+        <button class="action-btn" data-action="farm">Tend Fields / Flocks</button>
+        <button class="action-btn" data-action="trade">Trade at Market</button>
+        <button class="action-btn" data-action="family">Family & Household</button>
+        <button class="action-btn" data-action="pray">Offer Sacrifice</button>
         <button id="pause-btn">Pause / Resume Time</button>
       </div>
     </div>
 
     <footer>
-      <p>A historical simulation inspired by biblical accounts and Iron Age archaeology. Not a substitute for the scriptures.</p>
+      <p>Historical simulation inspired by biblical accounts and Iron Age archaeology. Not a substitute for the scriptures. Multiplayer via PeerJS (WebRTC).</p>
     </footer>
   </div>
+  <script src="peerjs.min.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
