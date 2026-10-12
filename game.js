@@ -410,12 +410,8 @@ function updateStatus() {
   document.getElementById('age').textContent = p.age;
   document.getElementById('location').textContent = p.region;
   document.getElementById('kingdom').textContent = p.kingdom;
-  document.getElementById('health').textContent = p.health;
-  document.getElementById('wealth').textContent = p.wealth;
-  document.getElementById('food').textContent = p.food;
-  document.getElementById('livestock').textContent = p.livestock;
-  document.getElementById('family').textContent = p.family;
-  document.getElementById('piety').textContent = p.piety;
+  const familyName = document.getElementById('family-name');
+  if (familyName) familyName.textContent = p.name;
   drawMeters();
 }
 
@@ -437,6 +433,8 @@ function drawMeters() {
     const value = Number(game.player[key]) || 0;
     const fill = document.getElementById('bar-' + key);
     if (fill) fill.style.width = Math.max(0, Math.min(100, (value / METER_MAX[key]) * 100)) + '%';
+    const valueEl = document.getElementById('val-' + key);
+    if (valueEl) valueEl.textContent = String(value);
     const canvas = document.getElementById('spark-' + key);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -465,7 +463,7 @@ function updateTimeline() {
   if (!pastList || !upcomingList) return;
 
   // Past = earlier years (higher BC numbers)
-  const past = TIMELINE.filter(e => e.year > game.year).slice(-4).reverse();
+  const past = TIMELINE.filter(e => e.year > game.year).slice(-4);
   // Upcoming = later years (lower BC numbers)
   const upcoming = TIMELINE.filter(e => e.year < game.year).slice(0, 4);
 
@@ -674,14 +672,6 @@ function showChoices(choices, autoPick) {
     checkDeathOrSuccession();
     addNarrative("The year continues...");
   };
-  choices.forEach(choice => {
-    const btn = document.createElement('button');
-    btn.className = 'choice-btn';
-    btn.type = 'button';
-    btn.textContent = choice.text;
-    btn.addEventListener('click', () => resolve(choice, false));
-    container.appendChild(btn);
-  });
   if (autoPick && choices.length) {
     const timer = document.createElement('div');
     timer.className = 'choice-timer';
@@ -695,6 +685,14 @@ function showChoices(choices, autoPick) {
       resolve(choice, true);
     }, 5000);
   }
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.type = 'button';
+    btn.textContent = choice.text;
+    btn.addEventListener('click', () => resolve(choice, false));
+    container.appendChild(btn);
+  });
 }
 
 function checkDeathOrSuccession() {

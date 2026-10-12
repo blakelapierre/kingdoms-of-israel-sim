@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kingdoms of Israel: A Commoner's Tale</title>
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <div class="container">
@@ -85,16 +85,11 @@
     <!-- Game Screen -->
     <div id="game-screen" class="hidden">
       <div class="status-bar">
+        <div class="status-item"><strong>Family:</strong> <span id="family-name">—</span></div>
         <div class="status-item"><strong>Year:</strong> <span id="year">1050 BC</span></div>
         <div class="status-item"><strong>Age:</strong> <span id="age">16</span></div>
         <div class="status-item"><strong>Location:</strong> <span id="location">Ephraim</span></div>
         <div class="status-item"><strong>Kingdom:</strong> <span id="kingdom">Tribal Confederation</span></div>
-        <div class="status-item"><strong>Health:</strong> <span id="health">100</span></div>
-        <div class="status-item"><strong>Wealth:</strong> <span id="wealth">20</span> shekels</div>
-        <div class="status-item"><strong>Food:</strong> <span id="food">15</span> measures</div>
-        <div class="status-item"><strong>Livestock:</strong> <span id="livestock">5</span></div>
-        <div class="status-item"><strong>Family:</strong> <span id="family">1</span></div>
-        <div class="status-item"><strong>Piety:</strong> <span id="piety">50</span></div>
         <div class="status-item">
           <strong>Speed:</strong>
           <select id="speed-select">
@@ -107,12 +102,12 @@
         <div class="status-item" id="mp-indicator">Solo</div>
       </div>
       <div id="meters" class="meters">
-        <div class="meter"><span>Health</span><div class="meter-track"><div class="meter-fill" id="bar-health"></div></div><canvas class="spark" id="spark-health" width="88" height="24"></canvas></div>
-        <div class="meter"><span>Wealth</span><div class="meter-track"><div class="meter-fill" id="bar-wealth"></div></div><canvas class="spark" id="spark-wealth" width="88" height="24"></canvas></div>
-        <div class="meter"><span>Food</span><div class="meter-track"><div class="meter-fill" id="bar-food"></div></div><canvas class="spark" id="spark-food" width="88" height="24"></canvas></div>
-        <div class="meter"><span>Livestock</span><div class="meter-track"><div class="meter-fill" id="bar-livestock"></div></div><canvas class="spark" id="spark-livestock" width="88" height="24"></canvas></div>
-        <div class="meter"><span>Family</span><div class="meter-track"><div class="meter-fill" id="bar-family"></div></div><canvas class="spark" id="spark-family" width="88" height="24"></canvas></div>
-        <div class="meter"><span>Piety</span><div class="meter-track"><div class="meter-fill" id="bar-piety"></div></div><canvas class="spark" id="spark-piety" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Health</span><div class="meter-track"><div class="meter-fill" id="bar-health"></div></div><span class="meter-value" id="val-health">100</span><canvas class="spark" id="spark-health" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Wealth</span><div class="meter-track"><div class="meter-fill" id="bar-wealth"></div></div><span class="meter-value" id="val-wealth">20</span><canvas class="spark" id="spark-wealth" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Food</span><div class="meter-track"><div class="meter-fill" id="bar-food"></div></div><span class="meter-value" id="val-food">15</span><canvas class="spark" id="spark-food" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Livestock</span><div class="meter-track"><div class="meter-fill" id="bar-livestock"></div></div><span class="meter-value" id="val-livestock">5</span><canvas class="spark" id="spark-livestock" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Family</span><div class="meter-track"><div class="meter-fill" id="bar-family"></div></div><span class="meter-value" id="val-family">1</span><canvas class="spark" id="spark-family" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Piety</span><div class="meter-track"><div class="meter-fill" id="bar-piety"></div></div><span class="meter-value" id="val-piety">50</span><canvas class="spark" id="spark-piety" width="88" height="24"></canvas></div>
       </div>
 
       <div class="layout">
@@ -161,6 +156,6 @@
   </div>
   <script src="peerjs.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="game.js?v=9"></script>
+  <script src="game.js?v=10"></script>
 </body>
 </html>
