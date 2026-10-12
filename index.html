@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kingdoms of Israel: A Commoner's Tale</title>
-  <link rel="stylesheet" href="styles.css?v=10">
+  <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
   <div class="container">
@@ -33,6 +33,12 @@
       <h2>Begin Your Life (~1050 BC)</h2>
       <p>The age of the Judges is fading. Philistines press from the west. The tribes cry out for a king.</p>
 
+      <div class="share-block">
+        <p><strong>Share this game</strong></p>
+        <div id="main-qr" class="qr-box"></div>
+        <p id="main-url"></p>
+      </div>
+
       <label>Name: <input type="text" id="player-name" value="" maxlength="20" placeholder="Random name"></label>
       <label>Profession:
         <select id="profession">
@@ -53,13 +59,7 @@
       <button type="button" id="mp-toggle">Multiplayer</button>
 
       <div id="mp-section" class="mp-section hidden">
-        <h3>Share & Multiplayer</h3>
-        <p><strong>Share this game:</strong></p>
-        <div id="main-qr" class="qr-box"></div>
-        <p id="main-url" style="font-size:0.85em;word-break:break-all;"></p>
-
-        <hr>
-        <h4>PeerJS (quick rooms)</h4>
+        <h3>Multiplayer</h3>
         <button id="host-btn">Host a Village Room (PeerJS)</button>
         <div id="room-info" class="hidden">
           <p>Share this room code: <strong id="room-code"></strong></p>

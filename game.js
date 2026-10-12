@@ -102,21 +102,31 @@ function init() {
 }
 
 let mpQrReady = false;
+function renderMainQr() {
+  const box = document.getElementById('main-qr');
+  if (!box || box.dataset.ready === '1') return;
+  const url = window.location.href.split('?')[0].split('#')[0];
+  const urlEl = document.getElementById('main-url');
+  if (urlEl) urlEl.textContent = url;
+  box.innerHTML = '';
+  const size = Math.max(128, Math.min(180, Math.floor(window.innerWidth * 0.5)));
+  try {
+    new QRCode(box, {
+      text: url,
+      width: size,
+      height: size,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    box.dataset.ready = '1';
+  } catch (err) {
+    box.textContent = url;
+  }
+}
 function toggleMultiplayer() {
   const panel = document.getElementById('mp-section');
   panel.classList.toggle('hidden');
   const open = !panel.classList.contains('hidden');
   document.getElementById('mp-toggle').textContent = open ? 'Hide multiplayer' : 'Multiplayer';
-  if (!open || mpQrReady) return;
-  try {
-    const url = window.location.href.split('?')[0];
-    document.getElementById('main-url').textContent = url;
-    document.getElementById('main-qr').innerHTML = '';
-    new QRCode(document.getElementById('main-qr'), { text: url, width: 128, height: 128 });
-    mpQrReady = true;
-  } catch (err) {
-    console.warn('QR setup skipped', err);
-  }
 }
 
 let introBlobUrls = new Map();
@@ -253,6 +263,7 @@ function finishIntro() {
   }
   document.getElementById('intro-screen').classList.add('hidden');
   document.getElementById('start-screen').classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(renderMainQr));
 }
 
 function hostRoom() {
