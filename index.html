@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kingdoms of Israel: A Commoner's Tale</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <div class="container">
@@ -16,13 +16,15 @@
     <!-- Intro Animation Screen -->
     <div id="intro-screen" class="panel">
       <h2>From the Patriarchs to the Judges</h2>
-      <video id="intro-video" class="intro-video" playsinline muted autoplay loop></video>
+      <video id="intro-video" class="intro-video" playsinline preload="auto" controls></video>
+      <p id="intro-sound-hint">Tap anywhere on this story to turn sound on. Browsers block audio until you do.</p>
       <div id="intro-content" class="narrative"></div>
       <div id="intro-progress"></div>
       <div class="intro-controls">
-        <button id="intro-prev">← Previous</button>
-        <button id="intro-next">Next →</button>
-        <button id="skip-intro">Skip to Game</button>
+        <button type="button" id="intro-prev">← Previous</button>
+        <button type="button" id="intro-next">Next →</button>
+        <button type="button" id="intro-sound">Sound on</button>
+        <button type="button" id="skip-intro">Skip to Game</button>
       </div>
     </div>
 
@@ -152,6 +154,6 @@
   </div>
   <script src="peerjs.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="game.js"></script>
+  <script src="game.js?v=3"></script>
 </body>
 </html>

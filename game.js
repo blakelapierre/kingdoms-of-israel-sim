@@ -29,6 +29,7 @@ const game = {
   isHost: false,
   roomCode: null,
   introIndex: 0,
+  introSound: false,
   generation: 1,
   priorities: { farm: true, trade: false, family: false, pray: false },
   mapMarkers: [] // dynamic historical markers
@@ -61,8 +62,10 @@ const TIMELINE = [
 
 function init() {
   document.getElementById('skip-intro').addEventListener('click', () => { clearTimeouts(); finishIntro(); });
-  document.getElementById('intro-prev').addEventListener('click', () => { clearTimeouts(); game.introIndex = Math.max(0, game.introIndex - 2); showNextIntro(); });
-  document.getElementById('intro-next').addEventListener('click', () => { clearTimeouts(); showNextIntro(); });
+  document.getElementById('intro-prev').addEventListener('click', () => showIntroSegment(game.introIndex - 1));
+  document.getElementById('intro-next').addEventListener('click', () => showIntroSegment(game.introIndex + 1));
+  document.getElementById('intro-sound').addEventListener('click', () => enableIntroSound());
+  document.getElementById('intro-screen').addEventListener('pointerdown', () => enableIntroSound());
   document.getElementById('start-btn').addEventListener('click', startGame);
   document.getElementById('host-btn').addEventListener('click', hostRoom);
   document.getElementById('join-btn').addEventListener('click', joinRoom);
@@ -89,35 +92,58 @@ function init() {
     nameInput.value = BIBLICAL_NAMES[Math.floor(Math.random() * BIBLICAL_NAMES.length)];
   }
 
-  // Main game URL QR
-  const url = window.location.href.split('?')[0];
-  document.getElementById('main-url').textContent = url;
-  new QRCode(document.getElementById('main-qr'), { text: url, width: 128, height: 128 });
+  try {
+    const url = window.location.href.split('?')[0];
+    document.getElementById('main-url').textContent = url;
+    new QRCode(document.getElementById('main-qr'), { text: url, width: 128, height: 128 });
+  } catch (err) {
+    console.warn('QR setup skipped', err);
+  }
 
   playIntro();
 }
 
 let introTimer = null;
 function playIntro() {
-  game.introIndex = 0;
-  showNextIntro();
+  showIntroSegment(0);
 }
-function showNextIntro() {
-  const content = document.getElementById('intro-content');
-  const progress = document.getElementById('intro-progress');
+function mediaUrl(rel) {
+  return new URL(rel, window.location.href).href;
+}
+function enableIntroSound() {
+  game.introSound = true;
   const video = document.getElementById('intro-video');
-  if (game.introIndex >= INTRO_EVENTS.length) { finishIntro(); return; }
-  const ev = INTRO_EVENTS[game.introIndex];
-  content.innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
-  progress.textContent = `Segment ${game.introIndex + 1} of ${INTRO_EVENTS.length}`;
+  const hint = document.getElementById('intro-sound-hint');
+  if (hint) hint.textContent = 'Sound is on.';
+  if (!video) return;
+  video.muted = false;
+  video.volume = 1;
+  const pending = video.play();
+  if (pending && pending.catch) pending.catch(() => {});
+}
+function showIntroSegment(index) {
+  clearTimeouts();
+  if (index >= INTRO_EVENTS.length) { finishIntro(); return; }
+  if (index < 0) index = 0;
+  game.introIndex = index;
+  const ev = INTRO_EVENTS[index];
+  document.getElementById('intro-content').innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
+  document.getElementById('intro-progress').textContent = `Segment ${index + 1} of ${INTRO_EVENTS.length}`;
+  const video = document.getElementById('intro-video');
   if (video && ev.video) {
-    video.src = ev.video;
-    video.currentTime = 0;
-    const playPromise = video.play();
-    if (playPromise && playPromise.catch) playPromise.catch(() => {});
+    const src = mediaUrl(ev.video);
+    video.muted = !game.introSound;
+    video.onerror = () => {
+      document.getElementById('intro-progress').textContent = `Could not load video (${src})`;
+    };
+    video.onloadeddata = () => {
+      const pending = video.play();
+      if (pending && pending.catch) pending.catch(() => {});
+    };
+    if (video.getAttribute('src') !== src) video.src = src;
+    else video.play().catch(() => {});
   }
-  game.introIndex++;
-  introTimer = setTimeout(showNextIntro, 9000);
+  introTimer = setTimeout(() => showIntroSegment(index + 1), 12000);
 }
 function clearTimeouts() { if (introTimer) clearTimeout(introTimer); }
 function finishIntro() {

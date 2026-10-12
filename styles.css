@@ -74,8 +74,9 @@ header h1 {
   object-fit: cover;
 }
 
-.intro-controls {
-  margin-top: 15px;
+#intro-sound-hint {
+  font-size: 0.9em;
+  margin: 6px 0 0;
 }
 
 .qr-box {
