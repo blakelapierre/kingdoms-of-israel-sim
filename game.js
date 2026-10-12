@@ -353,6 +353,7 @@ function startGame() {
   updateStatus();
   updateTimeline();
   addNarrative(`Generation ${game.generation}: You are ${name}, a young ${profession} in ${region}. Year ${game.year} BC. Set priorities so your household produces food and wealth automatically each year.`);
+  updateKingdom();
   drawMap();
   restartYearTimer();
 
@@ -609,6 +610,9 @@ function advanceYear() {
       game.mapMarkers.push(event.mapMarker);
       broadcast({ type: 'marker', marker: event.mapMarker });
     }
+    updateKingdom();
+    updateTimeline();
+    drawMap();
     return;
   }
 
@@ -616,6 +620,7 @@ function advanceYear() {
   else addNarrative(`The year ${game.year} BC passes.`);
 
   updateStatus();
+  updateKingdom();
   updateTimeline();
   drawMap();
   broadcast({ type: 'year', year: game.year });
@@ -696,23 +701,124 @@ function checkDeathOrSuccession() {
   if (!game.player) return;
   const p = game.player;
   if (game.year < 690) {
-    addNarrative(`\n*** The simulation reaches its end around 700 BC. ***\nYour lineage has lived through the United Kingdom, the division, and the fall of the north.\nFinal generation: ${p.generation}.`);
+    addNarrative("The simulation reaches its end around 700 BC. Your lineage has lived through the United Kingdom, the division, and the fall of the north. Final generation: " + p.generation + ".");
     if (game.yearTimer) clearInterval(game.yearTimer);
     return;
   }
   if (p.health <= 0 || p.age > 65) {
     const reason = p.health <= 0 ? "from hardship" : "of old age";
-    addNarrative(`\n*** Generation ${p.generation} ends ${reason} (age ${p.age}). ***`);
-    // Succession: new household continues the lineage
+    addNarrative("Generation " + p.generation + " ends " + reason + " (age " + p.age + ").");
     game.generation += 1;
-    const newName = p.name.split(' ')[0] + " II"; // simple naming
+    const newName = p.name.split(" ")[0] + " II";
     createNewHousehold(newName, p.profession, p.region);
     game.households = game.households.filter(h => !h.isLocal);
     game.households.push({ name: newName, region: p.region, generation: game.generation, isLocal: true });
-    addNarrative(`A new generation begins: ${newName}, age 16, continues the household in ${p.region}. The story of the land goes on.`);
+    addNarrative("A new generation begins: " + newName + ", age 16, continues the household in " + p.region + ". The story of the land goes on.");
     updateStatus();
-    broadcast({ type: 'household', household: { name: newName, region: p.region, generation: game.generation, isLocal: false } });
+    broadcast({ type: "household", household: { name: newName, region: p.region, generation: game.generation, isLocal: false } });
   }
+}
+
+function updateKingdom() {
+  if (!game.player) return;
+  const year = game.year;
+  const region = game.player.region;
+  if (year > 930) game.player.kingdom = "United Kingdom";
+  else if (region === "Judah" || region === "Benjamin") game.player.kingdom = "Kingdom of Judah";
+  else if (year <= 722) game.player.kingdom = "Assyrian province";
+  else game.player.kingdom = "Kingdom of Israel";
+  const el = document.getElementById('kingdom');
+  if (el) el.textContent = game.player.kingdom;
+}
+
+const PLACES = {
+  Gibeah: { x: 228, y: 248 },
+  Hebron: { x: 168, y: 360 },
+  Jerusalem: { x: 214, y: 278 },
+  Shechem: { x: 162, y: 148 },
+  Tirzah: { x: 230, y: 132 },
+  Samaria: { x: 148, y: 168 }
+};
+
+function kingsAt(year) {
+  if (year > 1050) return [];
+  if (year > 1010) return [{ who: "Saul", where: "Gibeah", realm: "Israel" }];
+  if (year > 1000) return [{ who: "David", where: "Hebron", realm: "Judah" }];
+  if (year > 970) return [{ who: "David", where: "Jerusalem", realm: "Israel" }];
+  if (year > 930) return [{ who: "Solomon", where: "Jerusalem", realm: "Israel" }];
+  const judah = { who: kingOfJudah(year), where: "Jerusalem", realm: "Judah" };
+  if (year < 722) return [judah];
+  let israelWhere = "Shechem";
+  if (year <= 910 && year > 870) israelWhere = "Tirzah";
+  if (year <= 870) israelWhere = "Samaria";
+  return [judah, { who: kingOfIsrael(year), where: israelWhere, realm: "Israel" }];
+}
+
+function kingOfJudah(year) {
+  if (year > 913) return "Rehoboam";
+  if (year > 910) return "Abijah";
+  if (year > 869) return "Asa";
+  if (year > 848) return "Jehoshaphat";
+  if (year > 841) return "Jehoram";
+  if (year > 835) return "Athaliah";
+  if (year > 796) return "Joash";
+  if (year > 767) return "Amaziah";
+  if (year > 740) return "Uzziah";
+  if (year > 732) return "Jotham";
+  if (year > 716) return "Ahaz";
+  return "Hezekiah";
+}
+
+function kingOfIsrael(year) {
+  if (year > 909) return "Jeroboam";
+  if (year > 908) return "Nadab";
+  if (year > 886) return "Baasha";
+  if (year > 885) return "Elah";
+  if (year > 874) return "Omri";
+  if (year > 853) return "Ahab";
+  if (year > 852) return "Ahaziah";
+  if (year > 841) return "Joram";
+  if (year > 814) return "Jehu";
+  if (year > 798) return "Jehoahaz";
+  if (year > 782) return "Jehoash";
+  if (year > 753) return "Jeroboam II";
+  if (year > 752) return "Zechariah";
+  if (year > 742) return "Menahem";
+  if (year > 740) return "Pekahiah";
+  if (year > 732) return "Pekah";
+  return "Hoshea";
+}
+
+function drawPlace(ctx, x, y, label, fill) {
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = "#3e2723";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(x - 5, y - 5, 10, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#3e2723";
+  ctx.font = "bold 10px Georgia";
+  ctx.textAlign = "left";
+  ctx.fillText(label, x + 8, y + 3);
+}
+
+function drawKing(ctx, king, index) {
+  const place = PLACES[king.where];
+  if (!place) return;
+  const x = place.x + (king.realm === "Israel" && king.where === "Jerusalem" ? 0 : 0);
+  const y = place.y - 16 - index * 14;
+  ctx.fillStyle = "#f9a825";
+  ctx.strokeStyle = "#3e2723";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#3e2723";
+  ctx.font = "bold 10px Georgia";
+  ctx.textAlign = "left";
+  ctx.fillText(`${king.who} · ${king.where}`, x + 10, y + 3);
 }
 
 function drawMap() {
@@ -742,6 +848,7 @@ function drawMap() {
 
   // Dynamic historical markers
   game.mapMarkers.forEach(m => {
+    if (/Jerusalem|Temple|Samaria/i.test(m.name || "")) return;
     ctx.fillStyle = m.color || '#ff9800';
     ctx.beginPath(); ctx.arc(m.x, m.y, 6, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#3e2723'; ctx.font = '9px Georgia'; ctx.textAlign = 'left';
@@ -762,6 +869,17 @@ function drawMap() {
     ctx.fillText((h.name || '').slice(0, 10), x + 10, y + 3);
   });
 
+  // Cities and the reigning king, derived from the year so they cannot be missed.
+  if (game.year <= 1000) {
+    const jerusalem = PLACES.Jerusalem;
+    drawPlace(ctx, jerusalem.x, jerusalem.y, game.year <= 960 ? "Jerusalem · Temple" : "Jerusalem", "#8d6e63");
+  }
+  if (game.year <= 870) {
+    const samaria = PLACES.Samaria;
+    drawPlace(ctx, samaria.x, samaria.y, game.year < 722 ? "Samaria (fallen)" : "Samaria", "#6a1b9a");
+  }
+  kingsAt(game.year).forEach((king, i) => drawKing(ctx, king, i));
+
   // Year
   ctx.fillStyle = '#3e2723'; ctx.font = 'bold 14px Georgia'; ctx.textAlign = 'center';
   ctx.fillText(`${game.year} BC`, canvas.width / 2, 28);
@@ -769,7 +887,7 @@ function drawMap() {
   // Legend
   const legend = document.getElementById('map-legend');
   if (legend) {
-    legend.innerHTML = '<span style="color:#c62828">●</span> Your household &nbsp; <span style="color:#2e7d32">●</span> Neighbor families &nbsp; <span style="color:#1565c0">●</span> Other players';
+    legend.innerHTML = '<span style="color:#f9a825">●</span> King &nbsp; <span style="color:#8d6e63">■</span> Jerusalem &nbsp; <span style="color:#c62828">●</span> You &nbsp; <span style="color:#2e7d32">●</span> Neighbors';
   }
 }
 
