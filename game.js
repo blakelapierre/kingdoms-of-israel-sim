@@ -102,30 +102,56 @@ function init() {
   playIntro();
 }
 
-let introVideos = new Map();
+let introBlobUrls = new Map();
+let introFetches = new Map();
+let introShowToken = 0;
 
 function playIntro() {
-  preloadIntro(0);
-  preloadIntro(1);
+  ensureIntroVideo();
+  prefetchIntro(0);
+  prefetchIntro(1);
+  prefetchIntro(2);
   showIntroSegment(0);
 }
 function mediaUrl(rel) {
   return new URL(rel, window.location.href).href;
 }
-function preloadIntro(index) {
-  if (index < 0 || index >= INTRO_EVENTS.length) return null;
+function prefetchIntro(index) {
+  if (index < 0 || index >= INTRO_EVENTS.length) return Promise.resolve(null);
   const src = mediaUrl(INTRO_EVENTS[index].video);
-  let video = introVideos.get(src);
-  if (!video) {
-    video = document.createElement('video');
-    video.className = 'intro-video';
-    video.playsInline = true;
+  if (introBlobUrls.has(src)) return Promise.resolve(introBlobUrls.get(src));
+  if (introFetches.has(src)) return introFetches.get(src);
+  const task = fetch(src).then(response => {
+    if (!response.ok) throw new Error('video ' + response.status);
+    return response.blob();
+  }).then(blob => {
+    const url = URL.createObjectURL(blob);
+    introBlobUrls.set(src, url);
+    const next = INTRO_EVENTS.findIndex(ev => mediaUrl(ev.video) === src) + 1;
+    if (next > 0 && next < INTRO_EVENTS.length && !introBlobUrls.has(mediaUrl(INTRO_EVENTS[next].video))) prefetchIntro(next);
+    return url;
+  }).catch(err => {
+    introFetches.delete(src);
+    throw err;
+  });
+  introFetches.set(src, task);
+  return task;
+}
+function ensureIntroVideo() {
+  let video = document.getElementById('intro-video');
+  if (video) return video;
+  video = document.createElement('video');
+  video.id = 'intro-video';
+  video.className = 'intro-video is-hidden';
+  video.playsInline = true;
+  video.controls = false;
+  video.preload = 'auto';
+  const wrap = document.getElementById('intro-video-wrap');
+  wrap.insertBefore(video, document.getElementById('intro-start'));
+  video.addEventListener('click', event => {
     video.controls = true;
-    video.preload = 'auto';
-    video.src = src;
-    video.load();
-    introVideos.set(src, video);
-  }
+    event.stopPropagation();
+  });
   return video;
 }
 function showStartPrompt() {
@@ -135,7 +161,7 @@ function hideStartPrompt() {
   document.getElementById('intro-start').classList.add('hidden');
 }
 function startCurrentIntro() {
-  const video = preloadIntro(game.introIndex);
+  const video = document.getElementById('intro-video');
   if (!video) return;
   hideStartPrompt();
   video.muted = false;
@@ -146,60 +172,68 @@ function startCurrentIntro() {
 function showIntroSegment(index) {
   if (index >= INTRO_EVENTS.length) { finishIntro(); return; }
   if (index < 0) index = 0;
+  const token = ++introShowToken;
   game.introIndex = index;
   const ev = INTRO_EVENTS[index];
   document.getElementById('intro-content').innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
   document.getElementById('intro-progress').textContent = `Segment ${index + 1} of ${INTRO_EVENTS.length}`;
 
-  const video = preloadIntro(index);
-  const wrap = document.getElementById('intro-video-wrap');
-  const startBtn = document.getElementById('intro-start');
-  wrap.querySelectorAll('video').forEach(other => {
-    if (other !== video) {
-      other.pause();
-      other.onended = null;
-      other.remove();
-    }
+  const video = ensureIntroVideo();
+  video.controls = false;
+  video.onended = null;
+  video.pause();
+  video.classList.add('is-hidden');
+  prefetchIntro(index + 1);
+  prefetchIntro(index + 2);
+
+  prefetchIntro(index).then(url => {
+    if (token !== introShowToken || !url) return;
+    if (video.src !== url) video.src = url;
+    video.loop = false;
+    video.muted = false;
+    video.volume = 1;
+    video.classList.remove('is-hidden');
+    video.onended = () => {
+      if (game.introIndex !== index) return;
+      video.onended = null;
+      video.pause();
+      video.controls = false;
+      video.classList.add('is-hidden');
+      video.removeAttribute('src');
+      video.load();
+      showIntroSegment(index + 1);
+    };
+    video.onerror = () => {
+      document.getElementById('intro-progress').textContent = 'Could not play this segment.';
+    };
+    const begin = () => {
+      if (token !== introShowToken) return;
+      try { if (video.currentTime > 0.05) video.currentTime = 0; } catch (err) {}
+      const pending = video.play();
+      if (pending && pending.then) {
+        pending.then(() => hideStartPrompt()).catch(() => {
+          if (token !== introShowToken) return;
+          video.pause();
+          showStartPrompt();
+        });
+      }
+    };
+    if (video.readyState >= 3) begin();
+    else video.addEventListener('canplay', begin, { once: true });
+  }).catch(() => {
+    if (token !== introShowToken) return;
+    document.getElementById('intro-progress').textContent = 'Could not load this segment.';
   });
-  if (video.parentNode !== wrap) wrap.insertBefore(video, startBtn);
-  video.hidden = false;
-
-  video.muted = false;
-  video.volume = 1;
-  video.loop = false;
-  video.onended = () => {
-    if (game.introIndex !== index) return;
-    video.onended = null;
-    video.pause();
-    video.remove();
-    showIntroSegment(index + 1);
-  };
-  video.onerror = () => {
-    document.getElementById('intro-progress').textContent = `Could not load video (${video.src})`;
-  };
-
-  preloadIntro(index + 1);
-
-  const begin = () => {
-    if (game.introIndex !== index) return;
-    try { if (video.currentTime > 0.05) video.currentTime = 0; } catch (err) {}
-    const pending = video.play();
-    if (pending && pending.then) {
-      pending.then(() => hideStartPrompt()).catch(() => {
-        if (game.introIndex !== index) return;
-        video.pause();
-        showStartPrompt();
-      });
-    }
-  };
-  if (video.readyState >= 2) begin();
-  else video.addEventListener('canplay', begin, { once: true });
 }
 function finishIntro() {
-  introVideos.forEach(video => {
+  introShowToken++;
+  const video = document.getElementById('intro-video');
+  if (video) {
     video.pause();
     video.onended = null;
-  });
+    video.controls = false;
+    video.classList.add('is-hidden');
+  }
   document.getElementById('intro-screen').classList.add('hidden');
   document.getElementById('start-screen').classList.remove('hidden');
 }
