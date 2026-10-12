@@ -110,6 +110,11 @@ header h1 {
   color: #6d4c41;
 }
 
+#mp-toggle {
+  display: block;
+  margin: 14px auto 0;
+}
+
 .mp-section {
   background: #efebe9;
   padding: 15px;

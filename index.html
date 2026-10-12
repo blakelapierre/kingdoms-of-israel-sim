@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kingdoms of Israel: A Commoner's Tale</title>
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
   <div class="container">
@@ -50,8 +50,9 @@
         </select>
       </label>
       <button id="start-btn">Begin Life in the Land</button>
+      <button type="button" id="mp-toggle">Multiplayer</button>
 
-      <div class="mp-section">
+      <div id="mp-section" class="mp-section hidden">
         <h3>Share & Multiplayer</h3>
         <p><strong>Share this game:</strong></p>
         <div id="main-qr" class="qr-box"></div>
@@ -156,6 +157,6 @@
   </div>
   <script src="peerjs.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="game.js?v=11"></script>
+  <script src="game.js?v=12"></script>
 </body>
 </html>

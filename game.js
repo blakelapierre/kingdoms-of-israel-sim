@@ -66,6 +66,7 @@ function init() {
   document.getElementById('intro-next').addEventListener('click', () => showIntroSegment(game.introIndex + 1));
   document.getElementById('intro-start').addEventListener('click', () => startCurrentIntro());
   document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('mp-toggle').addEventListener('click', toggleMultiplayer);
   document.getElementById('host-btn').addEventListener('click', hostRoom);
   document.getElementById('join-btn').addEventListener('click', joinRoom);
   document.getElementById('webrtc-host-btn').addEventListener('click', createWebRTCOffer);
@@ -91,15 +92,25 @@ function init() {
     nameInput.value = BIBLICAL_NAMES[Math.floor(Math.random() * BIBLICAL_NAMES.length)];
   }
 
+  playIntro();
+}
+
+let mpQrReady = false;
+function toggleMultiplayer() {
+  const panel = document.getElementById('mp-section');
+  panel.classList.toggle('hidden');
+  const open = !panel.classList.contains('hidden');
+  document.getElementById('mp-toggle').textContent = open ? 'Hide multiplayer' : 'Multiplayer';
+  if (!open || mpQrReady) return;
   try {
     const url = window.location.href.split('?')[0];
     document.getElementById('main-url').textContent = url;
+    document.getElementById('main-qr').innerHTML = '';
     new QRCode(document.getElementById('main-qr'), { text: url, width: 128, height: 128 });
+    mpQrReady = true;
   } catch (err) {
     console.warn('QR setup skipped', err);
   }
-
-  playIntro();
 }
 
 let introBlobUrls = new Map();
