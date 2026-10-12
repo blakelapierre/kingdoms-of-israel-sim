@@ -32,14 +32,18 @@ const game = {
   introSound: true,
   generation: 1,
   priorities: { farm: true, trade: true, family: true, pray: false },
-  mapMarkers: [] // dynamic historical markers
+  mapMarkers: [],
+  metricHistory: { health: [], wealth: [], food: [], livestock: [], family: [], piety: [] },
+  witnessed: [],
+  lineage: [],
+  ended: false
 };
 
 const REGION_POSITIONS = {
-  Manasseh: { x: 200, y: 120, color: '#8d6e63' },
-  Ephraim: { x: 180, y: 180, color: '#6d4c41' },
-  Benjamin: { x: 190, y: 230, color: '#5d4037' },
-  Judah: { x: 200, y: 320, color: '#4e342e' }
+  Manasseh: { x: 168, y: 150, color: '#6d4c41' },
+  Ephraim: { x: 172, y: 210, color: '#5d4037' },
+  Benjamin: { x: 180, y: 272, color: '#4e342e' },
+  Judah: { x: 162, y: 355, color: '#3e2723' }
 };
 
 const TIMELINE = [
@@ -80,6 +84,8 @@ function init() {
     broadcast({ type: 'speed', value: game.speedSecondsPerYear });
   });
   document.getElementById('pause-btn').addEventListener('click', togglePause);
+  const copyBtn = document.getElementById('copy-summary');
+  if (copyBtn) copyBtn.addEventListener('click', copySummary);
 
   ['farm','trade','family','pray'].forEach(p => {
     const el = document.getElementById('prio-' + p);
@@ -355,6 +361,9 @@ function startGame() {
   game.households = [{ name, region, generation: 1, isLocal: true }, ...simulatedHouseholds(name)];
   game.mapMarkers = [];
   game.metricHistory = { health: [], wealth: [], food: [], livestock: [], family: [], piety: [] };
+  game.witnessed = [];
+  game.lineage = [name];
+  game.ended = false;
   noteMetrics();
 
   document.getElementById('start-screen').classList.add('hidden');
@@ -638,6 +647,7 @@ function advanceYear() {
 
 function triggerHistoricalEvent(event) {
   game.currentEvent = event;
+  if (game.witnessed && !game.witnessed.includes(event.title)) game.witnessed.push(event.title);
   addNarrative(`\n=== ${event.title} (${event.year} BC) ===\n${event.text}`);
   if (event.mapNote) addNarrative(`Map note: ${event.mapNote}`);
   showChoices([
@@ -710,8 +720,8 @@ function checkDeathOrSuccession() {
   if (!game.player) return;
   const p = game.player;
   if (game.year < 690) {
-    addNarrative("The simulation reaches its end around 700 BC. Your lineage has lived through the United Kingdom, the division, and the fall of the north. Final generation: " + p.generation + ".");
     if (game.yearTimer) clearInterval(game.yearTimer);
+    showSummary();
     return;
   }
   if (p.health <= 0 || p.age > 65) {
@@ -722,6 +732,7 @@ function checkDeathOrSuccession() {
     createNewHousehold(newName, p.profession, p.region);
     game.households = game.households.filter(h => !h.isLocal);
     game.households.push({ name: newName, region: p.region, generation: game.generation, isLocal: true });
+    game.lineage.push(newName);
     addNarrative("A new generation begins: " + newName + ", age 16, continues the household in " + p.region + ". The story of the land goes on.");
     updateStatus();
     broadcast({ type: "household", household: { name: newName, region: p.region, generation: game.generation, isLocal: false } });
@@ -738,15 +749,106 @@ function updateKingdom() {
   else game.player.kingdom = "Kingdom of Israel";
   const el = document.getElementById('kingdom');
   if (el) el.textContent = game.player.kingdom;
+  updateKingBios();
+}
+
+const KING_BIOS = {
+  Saul: "First king of Israel, a Benjaminite anointed by Samuel. He ruled from Gibeah, fought the Ammonites and Philistines, and was rejected after he spared Agag and offered sacrifice at Gilgal. He died on Mount Gilboa. (1 Samuel 9–31)",
+  David: "Of Bethlehem in Judah. Anointed by Samuel, he served Saul and killed Goliath, then fled Saul’s court. He reigned at Hebron over Judah about seven years, captured Jerusalem, and ruled all Israel. He brought up the ark and received the promise of a lasting house. (2 Samuel; 1 Kings 2)",
+  Solomon: "Son of David and Bathsheba. He asked for wisdom, built the Temple and palace in Jerusalem, and widened trade. Heavy labor and high taxation marked the reign, and he turned to the gods of his foreign wives. (1 Kings 1–11)",
+  Rehoboam: "Son of Solomon. At Shechem he refused to lighten his father’s yoke, and the northern tribes made Jeroboam king. He ruled Judah from Jerusalem. Shishak of Egypt plundered the Temple in his reign. (1 Kings 12; 14)",
+  Abijah: "Son of Rehoboam. He reigned briefly in Judah and fought Jeroboam of Israel. Chronicles credits him with a victory and a speech against the golden calves. (1 Kings 15; 2 Chronicles 13)",
+  Asa: "King of Judah. He removed idols and relied on the Lord against Zerah the Cushite. Later he hired Ben-hadad of Aram to draw Baasha away from Ramah. (1 Kings 15; 2 Chronicles 14–16)",
+  Jehoshaphat: "King of Judah. He sent teachers of the law through the towns of Judah and allied with Ahab, including the campaign to Ramoth-gilead. (1 Kings 22; 2 Chronicles 17–20)",
+  Jehoram: "Son of Jehoshaphat and husband of Athaliah, daughter of Ahab. He walked in the ways of the kings of Israel and lost Edom. (2 Kings 8; 2 Chronicles 21)",
+  Athaliah: "Daughter of Ahab and Jezebel. After her son Ahaziah died she killed the royal family of Judah and took the throne. Joash was hidden in the Temple for six years, then she was overthrown. (2 Kings 11)",
+  Joash: "Hidden as an infant in the Temple and crowned at seven. Under Jehoiada he repaired the Temple. After the priest’s death he turned aside. (2 Kings 12; 2 Chronicles 24)",
+  Amaziah: "King of Judah. He defeated Edom, then challenged Jehoash of Israel, was captured, and saw part of Jerusalem’s wall broken down. (2 Kings 14)",
+  Uzziah: "Also called Azariah. He strengthened Judah’s army and borders during a long reign, then entered the Temple to burn incense and was struck with a skin disease. (2 Kings 15; 2 Chronicles 26)",
+  Jotham: "Son of Uzziah. He governed while his father lived apart, then reigned in his own right, and built the upper gate of the Temple. (2 Kings 15; 2 Chronicles 27)",
+  Ahaz: "King of Judah in the days of Isaiah. He adopted foreign altars and, during the attack by Rezin and Pekah, appealed to Tiglath-pileser III of Assyria. (2 Kings 16; Isaiah 7)",
+  Hezekiah: "King of Judah. He reformed worship and trusted the Lord when Sennacherib besieged Jerusalem in 701. The Assyrian army withdrew. His tunnel brought water into the city. (2 Kings 18–20)",
+  Jeroboam: "An Ephraimite officer of Solomon. He led the northern tribes after Rehoboam’s refusal and set golden calves at Bethel and Dan. He built at Shechem and Penuel; the court was later at Tirzah. (1 Kings 11–14)",
+  Nadab: "Son of Jeroboam. He reigned about two years over Israel and was killed by Baasha during the siege of Gibbethon. (1 Kings 15)",
+  Baasha: "He seized Israel’s throne, wiped out Jeroboam’s house, and warred with Asa of Judah from Ramah until Ben-hadad broke the siege. (1 Kings 15–16)",
+  Elah: "Son of Baasha. He reigned in Tirzah about two years and was killed by Zimri, who himself lasted only seven days. (1 Kings 16)",
+  Omri: "Commander of the army. He overcame Tibni, bought the hill of Samaria, and made it the capital. The books of Kings condemn his religious policy. He was the father of Ahab. (1 Kings 16)",
+  Ahab: "Son of Omri. He married Jezebel of Sidon and promoted Baal worship. Elijah confronted him, including on Mount Carmel. He took Naboth’s vineyard and died at Ramoth-gilead. (1 Kings 16–22)",
+  Ahaziah: "Son of Ahab. After a fall he inquired of Baal-zebub and died, as Elijah had said. His brother Joram reigned in his place. (1 Kings 22; 2 Kings 1)",
+  Joram: "Son of Ahab, also called Jehoram. He reigned in Samaria, fought Moab and Aram, and was killed by Jehu in the plot that ended Ahab’s house. (2 Kings 3; 9)",
+  Jehu: "Anointed by a prophet sent from Elisha. He killed Joram, Ahaziah of Judah, and Jezebel, and destroyed the Baal temple in Samaria. He left Jeroboam’s calves in place. (2 Kings 9–10)",
+  Jehoahaz: "Son of Jehu. In his reign Hazael of Aram oppressed Israel and left the army only a remnant. (2 Kings 13)",
+  Jehoash: "Son of Jehoahaz, king of Israel. He visited the dying Elisha, defeated Aram, and broke down part of Jerusalem’s wall after Amaziah challenged him. (2 Kings 13–14)",
+  "Jeroboam II": "Son of Jehoash. He restored Israel’s borders from Lebo-hamath to the Sea of the Arabah. It was a time of wealth and injustice, and of Amos and Hosea. (2 Kings 14)",
+  Zechariah: "Son of Jeroboam II. He reigned six months in Samaria and was killed by Shallum, ending the dynasty of Jehu. (2 Kings 15)",
+  Menahem: "He seized Israel’s throne and paid tribute to Pul, Tiglath-pileser of Assyria, exacting the silver from the wealthy. (2 Kings 15)",
+  Pekahiah: "Son of Menahem. He reigned in Samaria about two years and was killed by Pekah, his officer. (2 Kings 15)",
+  Pekah: "Son of Remaliah. With Rezin of Aram he attacked Ahaz of Judah. Tiglath-pileser then took Galilee and Gilead and carried people into exile. (2 Kings 15–16)",
+  Hoshea: "Last king of Israel. He became Assyria’s vassal, then turned to Egypt. Shalmaneser V imprisoned him and besieged Samaria. The city fell in 722, and the northern kingdom ended. (2 Kings 17)"
+};
+
+function updateKingBios() {
+  const el = document.getElementById('king-bios');
+  if (!el || !game.started) return;
+  const kings = kingsAt(game.year);
+  el.innerHTML = kings.map(king => {
+    const bio = KING_BIOS[king.who] || "";
+    return `<article><h3>${king.who}</h3><p class="king-meta">King of ${king.realm} · ${king.where}</p><p>${bio}</p></article>`;
+  }).join("");
+}
+
+function showSummary() {
+  if (game.ended) return;
+  game.ended = true;
+  const p = game.player;
+  const kings = [];
+  for (let y = 1050; y >= game.year; y--) {
+    kingsAt(y).forEach(king => {
+      const label = king.who + " of " + king.realm;
+      if (!kings.includes(label)) kings.push(label);
+    });
+  }
+  const lines = [
+    "House of " + (game.lineage[0] || p.name),
+    "A " + p.profession + " household in " + p.region + ", about 1050–" + game.year + " BC.",
+    "Generations: " + (game.lineage.length ? game.lineage.join(" → ") : p.name) + " (" + p.generation + ").",
+    "At the end the land around them was the " + p.kingdom + ".",
+    "Final stores: food " + p.food + ", livestock " + p.livestock + ", wealth " + p.wealth + " shekels, family " + p.family + ", piety " + p.piety + ", health " + p.health + ".",
+    "Kings who ruled during this household's years: " + kings.join("; ") + ".",
+    "Events they lived through: " + (game.witnessed.length ? game.witnessed.join("; ") : "the ordinary years of the land") + ".",
+    "Share this account from Kingdoms of Israel."
+  ];
+  const text = lines.join("\n");
+  const panel = document.getElementById('summary-panel');
+  const box = document.getElementById('summary-text');
+  if (box) box.textContent = text;
+  if (panel) panel.classList.remove('hidden');
+  addNarrative("The years of this simulation are complete. A summary of your household is ready to copy and share.");
+}
+
+function copySummary() {
+  const box = document.getElementById('summary-text');
+  const btn = document.getElementById('copy-summary');
+  if (!box) return;
+  const text = box.textContent;
+  const done = () => { if (btn) btn.textContent = "Copied"; };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => {
+      box.focus();
+      document.execCommand("selectAll");
+    });
+  }
 }
 
 const PLACES = {
-  Gibeah: { x: 228, y: 248 },
-  Hebron: { x: 168, y: 360 },
-  Jerusalem: { x: 214, y: 278 },
-  Shechem: { x: 162, y: 148 },
-  Tirzah: { x: 230, y: 132 },
-  Samaria: { x: 148, y: 168 }
+  Gibeah: { x: 186, y: 278 },
+  Hebron: { x: 168, y: 388 },
+  Jerusalem: { x: 178, y: 308 },
+  Shechem: { x: 176, y: 186 },
+  Tirzah: { x: 208, y: 176 },
+  Samaria: { x: 152, y: 198 },
+  Dan: { x: 190, y: 52 },
+  Bethel: { x: 182, y: 252 }
 };
 
 function kingsAt(year) {
@@ -830,28 +932,101 @@ function drawKing(ctx, king, index) {
   ctx.fillText(`${king.who} · ${king.where}`, x + 10, y + 3);
 }
 
+function drawLand(ctx) {
+  ctx.beginPath();
+  ctx.moveTo(188, 28);
+  ctx.lineTo(150, 46);
+  ctx.lineTo(112, 78);
+  ctx.lineTo(72, 118);
+  ctx.lineTo(64, 168);
+  ctx.lineTo(58, 240);
+  ctx.lineTo(66, 320);
+  ctx.lineTo(92, 400);
+  ctx.lineTo(130, 462);
+  ctx.lineTo(188, 482);
+  ctx.lineTo(236, 460);
+  ctx.lineTo(252, 390);
+  ctx.lineTo(246, 300);
+  ctx.lineTo(268, 220);
+  ctx.lineTo(286, 140);
+  ctx.lineTo(262, 70);
+  ctx.lineTo(220, 32);
+  ctx.closePath();
+}
+
 function drawMap() {
   const canvas = document.getElementById('map-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background
-  ctx.fillStyle = '#c8a882';
+  ctx.fillStyle = '#7eb6d6';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawLand(ctx);
+  ctx.fillStyle = '#d7c4a3';
   ctx.strokeStyle = '#6d4c41';
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+
+  if (game.year <= 930) {
+    ctx.save();
+    drawLand(ctx);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(46, 125, 50, 0.35)';
+    ctx.fillRect(0, 0, canvas.width, 268);
+    ctx.fillStyle = 'rgba(109, 76, 65, 0.28)';
+    ctx.fillRect(0, 268, canvas.width, canvas.height);
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = '#3e2723';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    ctx.moveTo(60, 268);
+    ctx.lineTo(250, 258);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#1b5e20';
+    ctx.font = 'bold 13px Georgia';
+    ctx.textAlign = 'center';
+    ctx.fillText(game.year < 722 ? 'Assyrian province' : 'Israel', 160, 120);
+    ctx.fillStyle = '#4e342e';
+    ctx.fillText('Judah', 160, 400);
+  }
+
+  ctx.fillStyle = '#4fc3f7';
+  ctx.beginPath();
+  ctx.ellipse(228, 108, 22, 14, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(228, 340, 18, 52, 0.05, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#4fc3f7';
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(80, 40); ctx.lineTo(320, 50); ctx.lineTo(340, 450); ctx.lineTo(60, 440); ctx.closePath();
+  ctx.moveTo(228, 122);
+  ctx.lineTo(232, 200);
+  ctx.lineTo(226, 288);
   ctx.stroke();
-  ctx.fillStyle = '#d4b896';
-  ctx.fill();
 
-  // Regions
+  ctx.fillStyle = '#1a3a4a';
+  ctx.font = '11px Georgia';
+  ctx.textAlign = 'left';
+  ctx.fillText('Great Sea', 8, 230);
+  ctx.fillText('Galilee', 210, 96);
+  ctx.fillText('Jordan', 238, 210);
+  ctx.fillText('Dead Sea', 198, 348);
+
   Object.entries(REGION_POSITIONS).forEach(([name, pos]) => {
     ctx.fillStyle = pos.color;
-    ctx.beginPath(); ctx.arc(pos.x, pos.y, 18, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff8e1'; ctx.font = 'bold 11px Georgia'; ctx.textAlign = 'center';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff8e1';
+    ctx.font = 'bold 11px Georgia';
+    ctx.textAlign = 'center';
     ctx.fillText(name.slice(0, 8), pos.x, pos.y + 4);
   });
 
@@ -889,14 +1064,15 @@ function drawMap() {
   }
   kingsAt(game.year).forEach((king, i) => drawKing(ctx, king, i));
 
-  // Year
-  ctx.fillStyle = '#3e2723'; ctx.font = 'bold 14px Georgia'; ctx.textAlign = 'center';
-  ctx.fillText(`${game.year} BC`, canvas.width / 2, 28);
+  ctx.fillStyle = '#0d2c3d';
+  ctx.font = 'bold 14px Georgia';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${game.year} BC`, canvas.width - 12, canvas.height - 12);
 
-  // Legend
   const legend = document.getElementById('map-legend');
   if (legend) {
-    legend.innerHTML = '<span style="color:#f9a825">●</span> King &nbsp; <span style="color:#8d6e63">■</span> Jerusalem &nbsp; <span style="color:#c62828">●</span> You &nbsp; <span style="color:#2e7d32">●</span> Neighbors';
+    const border = game.year <= 930 ? ' &nbsp; Dashed line = Israel / Judah' : '';
+    legend.innerHTML = '<span style="color:#f9a825">●</span> King &nbsp; <span style="color:#8d6e63">■</span> Jerusalem &nbsp; <span style="color:#c62828">●</span> You &nbsp; <span style="color:#2e7d32">●</span> Neighbors' + border;
   }
 }
 
