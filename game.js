@@ -2,13 +2,13 @@
 // Educational timeline + auto-priorities + generational continuity + dynamic map + PeerJS multiplayer
 
 const INTRO_EVENTS = [
-  { year: "~1850 BC", title: "Jacob is Named Israel", text: "After wrestling through the night at the Jabbok ford, Jacob is renamed Israel — 'he who strives with God.' He becomes the father of the twelve tribes.", anim: "⚔️ → ✨ Israel" },
-  { year: "~1700 BC", title: "Joseph in Egypt", text: "Joseph is sold into slavery, rises to power under Pharaoh, and brings his family (including Jacob/Israel) into Egypt during a famine. The people of Israel settle in Goshen.", anim: "🐪 → 👑 Egypt" },
-  { year: "~1446 BC", title: "The Exodus", text: "Moses leads the Israelites out of Egypt. They receive the Law at Sinai and wander in the wilderness.", anim: "🌊 → 🏔️ Sinai" },
-  { year: "~1406 BC", title: "Conquest under Joshua", text: "Joshua leads the people into the Promised Land. Jericho falls and the tribes receive their allotments.", anim: "🏰 → 📜 Land" },
-  { year: "~1375–1050 BC", title: "Period of the Judges", text: "There is no king in Israel. Cycles of apostasy, oppression, and deliverance. Judges include Deborah, Gideon, Jephthah, and Samson.", anim: "⚖️ Judges" },
-  { year: "~1080–1050 BC", title: "Samuel the Prophet-Judge", text: "Samuel judges Israel. The ark is captured and returned. The people demand a king.", anim: "📖 → 👑" },
-  { year: "1050 BC", title: "Call for a King", text: "The stage is set for the United Kingdom under Saul, David, and Solomon.", anim: "👑 United" }
+  { year: "~1850 BC", title: "Jacob is Named Israel", text: "After wrestling through the night at the Jabbok ford, Jacob is renamed Israel — 'he who strives with God.' He becomes the father of the twelve tribes.", video: "intro/jacob.mp4" },
+  { year: "~1700 BC", title: "Joseph in Egypt", text: "Joseph is sold into slavery, rises to power under Pharaoh, and brings his family (including Jacob/Israel) into Egypt during a famine. The people of Israel settle in Goshen.", video: "intro/joseph.mp4" },
+  { year: "~1446 BC", title: "The Exodus", text: "Moses leads the Israelites out of Egypt. They receive the Law at Sinai and wander in the wilderness.", video: "intro/exodus.mp4" },
+  { year: "~1406 BC", title: "Conquest under Joshua", text: "Joshua leads the people into the Promised Land. Jericho falls and the tribes receive their allotments.", video: "intro/joshua.mp4" },
+  { year: "~1375–1050 BC", title: "Period of the Judges", text: "There is no king in Israel. Cycles of apostasy, oppression, and deliverance. Judges include Deborah, Gideon, Jephthah, and Samson.", video: "intro/judges.mp4" },
+  { year: "~1080–1050 BC", title: "Samuel the Prophet-Judge", text: "Samuel judges Israel. The ark is captured and returned. The people demand a king.", video: "intro/samuel.mp4" },
+  { year: "1050 BC", title: "Call for a King", text: "The stage is set for the United Kingdom under Saul, David, and Solomon.", video: "intro/king.mp4" }
 ];
 
 const BIBLICAL_NAMES = ["Eliab", "Abner", "Amaziah", "Boaz", "Caleb", "Daniel", "Elijah", "Gideon", "Hosea", "Isaac", "Joel", "Micah", "Nathan", "Obadiah", "Phinehas", "Reuben", "Samuel", "Tobiah", "Uriah", "Zechariah"];
@@ -105,18 +105,24 @@ function playIntro() {
 function showNextIntro() {
   const content = document.getElementById('intro-content');
   const progress = document.getElementById('intro-progress');
-  const visual = document.getElementById('intro-visual');
+  const video = document.getElementById('intro-video');
   if (game.introIndex >= INTRO_EVENTS.length) { finishIntro(); return; }
   const ev = INTRO_EVENTS[game.introIndex];
   content.innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
   progress.textContent = `Segment ${game.introIndex + 1} of ${INTRO_EVENTS.length}`;
-  // Graphical animation scene
-  visual.innerHTML = `<div class="anim-scene">${ev.anim || ev.title}</div>`;
+  if (video && ev.video) {
+    video.src = ev.video;
+    video.currentTime = 0;
+    const playPromise = video.play();
+    if (playPromise && playPromise.catch) playPromise.catch(() => {});
+  }
   game.introIndex++;
-  introTimer = setTimeout(showNextIntro, 7000);
+  introTimer = setTimeout(showNextIntro, 9000);
 }
 function clearTimeouts() { if (introTimer) clearTimeout(introTimer); }
 function finishIntro() {
+  const video = document.getElementById('intro-video');
+  if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
   document.getElementById('intro-screen').classList.add('hidden');
   document.getElementById('start-screen').classList.remove('hidden');
 }
