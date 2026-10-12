@@ -19,7 +19,7 @@ const game = {
   started: false,
   currentEvent: null,
   paused: false,
-  speedSecondsPerYear: 30,
+  speedSecondsPerYear: 5,
   yearTimer: null,
   narrativeLines: [],
   maxNarrativeLines: 40,
@@ -31,7 +31,7 @@ const game = {
   introIndex: 0,
   introSound: true,
   generation: 1,
-  priorities: { farm: true, trade: false, family: false, pray: false },
+  priorities: { farm: true, trade: true, family: true, pray: false },
   mapMarkers: [] // dynamic historical markers
 };
 
@@ -303,6 +303,8 @@ function startGame() {
   game.paused = false;
   game.households = [{ name, region, generation: 1, isLocal: true }];
   game.mapMarkers = [];
+  game.metricHistory = { health: [], wealth: [], food: [], livestock: [], family: [], piety: [] };
+  noteMetrics();
 
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
@@ -360,6 +362,47 @@ function updateStatus() {
   document.getElementById('livestock').textContent = p.livestock;
   document.getElementById('family').textContent = p.family;
   document.getElementById('piety').textContent = p.piety;
+  drawMeters();
+}
+
+const METER_MAX = { health: 100, wealth: 120, food: 50, livestock: 30, family: 10, piety: 100 };
+
+function noteMetrics() {
+  if (!game.player) return;
+  Object.keys(game.metricHistory).forEach(key => {
+    const series = game.metricHistory[key];
+    series.push(Number(game.player[key]) || 0);
+    if (series.length > 80) series.shift();
+  });
+  drawMeters();
+}
+
+function drawMeters() {
+  if (!game.player) return;
+  Object.keys(METER_MAX).forEach(key => {
+    const value = Number(game.player[key]) || 0;
+    const fill = document.getElementById('bar-' + key);
+    if (fill) fill.style.width = Math.max(0, Math.min(100, (value / METER_MAX[key]) * 100)) + '%';
+    const canvas = document.getElementById('spark-' + key);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const series = game.metricHistory[key];
+    if (!series.length) return;
+    const max = Math.max(METER_MAX[key], ...series, 1);
+    ctx.strokeStyle = '#6d4c41';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    series.forEach((n, i) => {
+      const x = series.length === 1 ? w - 2 : (i / (series.length - 1)) * (w - 2) + 1;
+      const y = h - 2 - (n / max) * (h - 4);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
 }
 
 function updateTimeline() {
@@ -410,13 +453,19 @@ function updateTimeline() {
 }
 
 function addNarrative(text) {
-  const lines = text.split('\n');
+  const lines = String(text).split('\n').map(line => line.trim()).filter(Boolean);
   game.narrativeLines.push(...lines);
   if (game.narrativeLines.length > game.maxNarrativeLines) {
     game.narrativeLines = game.narrativeLines.slice(-game.maxNarrativeLines);
   }
   const el = document.getElementById('narrative');
-  el.textContent = game.narrativeLines.join('\n');
+  el.replaceChildren();
+  game.narrativeLines.forEach(line => {
+    const row = document.createElement('div');
+    row.className = 'log-line';
+    row.textContent = line;
+    el.appendChild(row);
+  });
   el.scrollTop = el.scrollHeight;
 }
 
@@ -496,6 +545,8 @@ function advanceYear() {
     }
     applyPriorities();
   }
+  noteMetrics();
+  updateStatus();
 
   const event = TIMELINE.find(e => e.year === game.year);
   if (event) {
@@ -526,7 +577,7 @@ function triggerHistoricalEvent(event) {
     { text: "Endure and adapt", effect: () => addNarrative("You weather the changes.") },
     { text: "Seek advantage", effect: () => { game.player.wealth += Math.random() > 0.5 ? 12 : -4; addNarrative("Fortune shifts."); } },
     { text: "Turn more to the Lord", effect: () => { game.player.piety += 10; addNarrative("You increase offerings."); } }
-  ]);
+  ], false);
 }
 
 function triggerPersonalEvent() {
@@ -542,29 +593,47 @@ function triggerPersonalEvent() {
   ];
   const ev = events[Math.floor(Math.random() * events.length)];
   game.currentEvent = ev;
-  addNarrative(`\nPersonal event: ${ev.text}`);
-  showChoices(ev.choices);
+  addNarrative(`Personal event: ${ev.text}`);
+  showChoices(ev.choices, true);
 }
 
-function showChoices(choices) {
+let choiceTimer = null;
+function showChoices(choices, autoPick) {
+  if (choiceTimer) { clearTimeout(choiceTimer); choiceTimer = null; }
   const container = document.getElementById('choices');
   container.innerHTML = '';
+  const resolve = (choice, auto) => {
+    if (!game.currentEvent) return;
+    if (choiceTimer) { clearTimeout(choiceTimer); choiceTimer = null; }
+    game.currentEvent = null;
+    choice.effect();
+    if (auto) addNarrative(`No choice in 5 seconds. The household decided: ${choice.text}.`);
+    clearChoices();
+    noteMetrics();
+    updateStatus();
+    updateTimeline();
+    drawMap();
+    checkDeathOrSuccession();
+    addNarrative("The year continues...");
+  };
   choices.forEach(choice => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
+    btn.type = 'button';
     btn.textContent = choice.text;
-    btn.addEventListener('click', () => {
-      choice.effect();
-      game.currentEvent = null;
-      clearChoices();
-      updateStatus();
-      updateTimeline();
-      drawMap();
-      checkDeathOrSuccession();
-      addNarrative("The year continues...");
-    });
+    btn.addEventListener('click', () => resolve(choice, false));
     container.appendChild(btn);
   });
+  if (autoPick && choices.length) {
+    const note = document.createElement('p');
+    note.className = 'choice-note';
+    note.textContent = 'Choose within 5 seconds, or one response is taken for you.';
+    container.appendChild(note);
+    choiceTimer = setTimeout(() => {
+      const choice = choices[Math.floor(Math.random() * choices.length)];
+      resolve(choice, true);
+    }, 5000);
+  }
 }
 
 function checkDeathOrSuccession() {

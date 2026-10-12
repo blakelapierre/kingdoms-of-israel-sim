@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kingdoms of Israel: A Commoner's Tale</title>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
   <div class="container">
@@ -101,11 +101,19 @@
           <select id="speed-select">
             <option value="30">1 year / 30s</option>
             <option value="10">1 year / 10s</option>
-            <option value="5">1 year / 5s</option>
+            <option value="5" selected>1 year / 5s</option>
             <option value="1">1 year / 1s</option>
           </select>
         </div>
         <div class="status-item" id="mp-indicator">Solo</div>
+      </div>
+      <div id="meters" class="meters">
+        <div class="meter"><span>Health</span><div class="meter-track"><div class="meter-fill" id="bar-health"></div></div><canvas class="spark" id="spark-health" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Wealth</span><div class="meter-track"><div class="meter-fill" id="bar-wealth"></div></div><canvas class="spark" id="spark-wealth" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Food</span><div class="meter-track"><div class="meter-fill" id="bar-food"></div></div><canvas class="spark" id="spark-food" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Livestock</span><div class="meter-track"><div class="meter-fill" id="bar-livestock"></div></div><canvas class="spark" id="spark-livestock" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Family</span><div class="meter-track"><div class="meter-fill" id="bar-family"></div></div><canvas class="spark" id="spark-family" width="88" height="24"></canvas></div>
+        <div class="meter"><span>Piety</span><div class="meter-track"><div class="meter-fill" id="bar-piety"></div></div><canvas class="spark" id="spark-piety" width="88" height="24"></canvas></div>
       </div>
 
       <div class="layout">
@@ -136,8 +144,8 @@
       <div class="actions panel">
         <h3>Yearly Priorities (auto-run each year)</h3>
         <label><input type="checkbox" id="prio-farm" checked> Farm / Tend flocks (produce food)</label>
-        <label><input type="checkbox" id="prio-trade"> Trade surplus (earn shekels)</label>
-        <label><input type="checkbox" id="prio-family"> Care for household / expand family</label>
+        <label><input type="checkbox" id="prio-trade" checked> Trade surplus (earn shekels)</label>
+        <label><input type="checkbox" id="prio-family" checked> Care for household / expand family</label>
         <label><input type="checkbox" id="prio-pray"> Offer sacrifice / seek the Lord</label>
         <br>
         <button class="action-btn" data-action="farm">Manual: Tend Fields / Flocks</button>
@@ -154,6 +162,6 @@
   </div>
   <script src="peerjs.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="game.js?v=4"></script>
+  <script src="game.js?v=5"></script>
 </body>
 </html>

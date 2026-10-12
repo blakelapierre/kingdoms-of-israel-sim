@@ -276,8 +276,62 @@ button:hover {
   flex: 1 1 200px;
 }
 
-.actions {
-  text-align: center;
+.meters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px 14px;
+  padding: 8px 15px 12px;
+  background: #f6efe4;
+  border-bottom: 2px solid var(--border);
+}
+
+.meter {
+  display: grid;
+  grid-template-columns: 72px 1fr 88px;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8em;
+}
+
+.meter-track {
+  height: 10px;
+  background: #d7ccc8;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0;
+  background: #6d4c41;
+  border-radius: 5px;
+}
+
+.spark {
+  width: 88px;
+  height: 24px;
+  background: #fff8e7;
+  border-radius: 3px;
+}
+
+#narrative {
+  max-height: 240px;
+  overflow-y: auto;
+  text-align: left;
+  white-space: normal;
+}
+
+.log-line {
+  display: block;
+  margin: 0 0 0.4em;
+  line-height: 1.4;
+}
+
+.actions label {
+  display: block;
+  text-align: left;
+  margin: 8px auto;
+  max-width: 420px;
 }
 
 .action-btn {
