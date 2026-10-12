@@ -341,7 +341,7 @@ function startGame() {
   game.year = 1050;
   game.started = true;
   game.paused = false;
-  game.households = [{ name, region, generation: 1, isLocal: true }];
+  game.households = [{ name, region, generation: 1, isLocal: true }, ...simulatedHouseholds(name)];
   game.mapMarkers = [];
   game.metricHistory = { health: [], wealth: [], food: [], livestock: [], family: [], piety: [] };
   noteMetrics();
@@ -357,6 +357,19 @@ function startGame() {
   restartYearTimer();
 
   if (game.isHost) broadcast({ type: 'sync', year: game.year, speed: game.speedSecondsPerYear, households: game.households, markers: game.mapMarkers });
+}
+
+function simulatedHouseholds(playerName) {
+  const neighbors = [
+    { name: "Hanan", region: "Ephraim" },
+    { name: "Miriam", region: "Judah" },
+    { name: "Tola", region: "Manasseh" },
+    { name: "Achsah", region: "Benjamin" },
+    { name: "Zebulun", region: "Judah" }
+  ];
+  return neighbors
+    .filter(n => n.name !== playerName)
+    .map(n => ({ name: n.name, region: n.region, generation: 1, isLocal: false, simulated: true }));
 }
 
 function createNewHousehold(name, profession, region) {
@@ -617,7 +630,7 @@ function triggerHistoricalEvent(event) {
     { text: "Endure and adapt", effect: () => addNarrative("You weather the changes.") },
     { text: "Seek advantage", effect: () => { game.player.wealth += Math.random() > 0.5 ? 12 : -4; addNarrative("Fortune shifts."); } },
     { text: "Turn more to the Lord", effect: () => { game.player.piety += 10; addNarrative("You increase offerings."); } }
-  ], false);
+  ], true);
 }
 
 function triggerPersonalEvent() {
@@ -665,10 +678,13 @@ function showChoices(choices, autoPick) {
     container.appendChild(btn);
   });
   if (autoPick && choices.length) {
-    const note = document.createElement('p');
-    note.className = 'choice-note';
-    note.textContent = 'Choose within 5 seconds, or one response is taken for you.';
-    container.appendChild(note);
+    const timer = document.createElement('div');
+    timer.className = 'choice-timer';
+    timer.title = 'Time left to choose';
+    const fill = document.createElement('div');
+    fill.className = 'choice-timer-fill';
+    timer.appendChild(fill);
+    container.appendChild(timer);
     choiceTimer = setTimeout(() => {
       const choice = choices[Math.floor(Math.random() * choices.length)];
       resolve(choice, true);
@@ -733,13 +749,17 @@ function drawMap() {
   });
 
   // Households
-  game.households.forEach((h, i) => {
+  game.households.forEach(h => {
     const pos = REGION_POSITIONS[h.region] || REGION_POSITIONS.Ephraim;
-    const offset = (i % 4) * 14 - 21;
-    ctx.fillStyle = h.isLocal ? '#c62828' : '#1565c0';
-    ctx.beginPath(); ctx.arc(pos.x + offset, pos.y - 28, 7, 0, Math.PI * 2); ctx.fill();
+    const same = game.households.filter(other => other.region === h.region);
+    const i = same.indexOf(h);
+    const angle = (i / Math.max(same.length, 1)) * Math.PI * 2 - Math.PI / 2;
+    const x = pos.x + Math.cos(angle) * 28;
+    const y = pos.y + Math.sin(angle) * 22;
+    ctx.fillStyle = h.isLocal ? '#c62828' : (h.simulated ? '#2e7d32' : '#1565c0');
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#3e2723'; ctx.font = '9px Georgia'; ctx.textAlign = 'left';
-    ctx.fillText((h.name || '').slice(0, 10), pos.x + offset + 10, pos.y - 25);
+    ctx.fillText((h.name || '').slice(0, 10), x + 10, y + 3);
   });
 
   // Year
@@ -749,7 +769,7 @@ function drawMap() {
   // Legend
   const legend = document.getElementById('map-legend');
   if (legend) {
-    legend.innerHTML = '<span style="color:#c62828">●</span> Your household &nbsp; <span style="color:#1565c0">●</span> Other players &nbsp; Colored dots = historical sites';
+    legend.innerHTML = '<span style="color:#c62828">●</span> Your household &nbsp; <span style="color:#2e7d32">●</span> Neighbor families &nbsp; <span style="color:#1565c0">●</span> Other players';
   }
 }
 
