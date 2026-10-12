@@ -32,7 +32,25 @@
     <div id="start-screen" class="panel hidden">
       <h2>Begin Your Life (~1050 BC)</h2>
       <p>The age of the Judges is fading. Philistines press from the west. The tribes cry out for a king.</p>
-      
+
+      <label>Name: <input type="text" id="player-name" value="" maxlength="20" placeholder="Random name"></label>
+      <label>Profession:
+        <select id="profession">
+          <option value="farmer">Farmer (wheat & barley)</option>
+          <option value="shepherd">Shepherd (sheep & goats)</option>
+          <option value="merchant">Small Merchant (trade goods)</option>
+        </select>
+      </label>
+      <label>Starting Tribe/Region:
+        <select id="region">
+          <option value="Ephraim">Ephraim (central hills)</option>
+          <option value="Judah">Judah (southern hills)</option>
+          <option value="Benjamin">Benjamin (near the highlands)</option>
+          <option value="Manasseh">Manasseh (north-central)</option>
+        </select>
+      </label>
+      <button id="start-btn">Begin Life in the Land</button>
+
       <div class="mp-section">
         <h3>Share & Multiplayer</h3>
         <p><strong>Share this game:</strong></p>
@@ -62,25 +80,6 @@
         <button id="webrtc-set-answer">Set Remote Answer</button>
         <p id="mp-status"></p>
       </div>
-
-      <hr>
-      <label>Name: <input type="text" id="player-name" value="" maxlength="20" placeholder="Random name"></label>
-      <label>Profession:
-        <select id="profession">
-          <option value="farmer">Farmer (wheat & barley)</option>
-          <option value="shepherd">Shepherd (sheep & goats)</option>
-          <option value="merchant">Small Merchant (trade goods)</option>
-        </select>
-      </label>
-      <label>Starting Tribe/Region:
-        <select id="region">
-          <option value="Ephraim">Ephraim (central hills)</option>
-          <option value="Judah">Judah (southern hills)</option>
-          <option value="Benjamin">Benjamin (near the highlands)</option>
-          <option value="Manasseh">Manasseh (north-central)</option>
-        </select>
-      </label>
-      <button id="start-btn">Begin Life in the Land</button>
     </div>
 
     <!-- Game Screen -->
@@ -162,6 +161,6 @@
   </div>
   <script src="peerjs.min.js"></script>
   <script src="qrcode.min.js"></script>
-  <script src="game.js?v=5"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

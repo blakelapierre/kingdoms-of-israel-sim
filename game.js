@@ -158,15 +158,21 @@ function showIntroSegment(index) {
     if (other !== video) {
       other.pause();
       other.onended = null;
+      other.remove();
     }
   });
   if (video.parentNode !== wrap) wrap.insertBefore(video, startBtn);
+  video.hidden = false;
 
   video.muted = false;
   video.volume = 1;
   video.loop = false;
   video.onended = () => {
-    if (game.introIndex === index) showIntroSegment(index + 1);
+    if (game.introIndex !== index) return;
+    video.onended = null;
+    video.pause();
+    video.remove();
+    showIntroSegment(index + 1);
   };
   video.onerror = () => {
     document.getElementById('intro-progress').textContent = `Could not load video (${video.src})`;
