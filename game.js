@@ -2,14 +2,16 @@
 // Educational timeline + auto-priorities + generational continuity + dynamic map + PeerJS multiplayer
 
 const INTRO_EVENTS = [
-  { year: "~1850 BC", title: "Jacob is Named Israel", text: "After wrestling through the night at the Jabbok ford, Jacob is renamed Israel — 'he who strives with God.' He becomes the father of the twelve tribes." },
-  { year: "~1700 BC", title: "Joseph in Egypt", text: "Joseph is sold into slavery, rises to power under Pharaoh, and brings his family (including Jacob/Israel) into Egypt during a famine. The people of Israel settle in Goshen." },
-  { year: "~1446 BC", title: "The Exodus", text: "Moses leads the Israelites out of Egypt. They receive the Law at Sinai and wander in the wilderness." },
-  { year: "~1406 BC", title: "Conquest under Joshua", text: "Joshua leads the people into the Promised Land. Jericho falls and the tribes receive their allotments." },
-  { year: "~1375–1050 BC", title: "Period of the Judges", text: "There is no king in Israel. Cycles of apostasy, oppression, and deliverance. Judges include Deborah, Gideon, Jephthah, and Samson." },
-  { year: "~1080–1050 BC", title: "Samuel the Prophet-Judge", text: "Samuel judges Israel. The ark is captured and returned. The people demand a king." },
-  { year: "1050 BC", title: "Call for a King", text: "The stage is set for the United Kingdom under Saul, David, and Solomon." }
+  { year: "~1850 BC", title: "Jacob is Named Israel", text: "After wrestling through the night at the Jabbok ford, Jacob is renamed Israel — 'he who strives with God.' He becomes the father of the twelve tribes.", anim: "⚔️ → ✨ Israel" },
+  { year: "~1700 BC", title: "Joseph in Egypt", text: "Joseph is sold into slavery, rises to power under Pharaoh, and brings his family (including Jacob/Israel) into Egypt during a famine. The people of Israel settle in Goshen.", anim: "🐪 → 👑 Egypt" },
+  { year: "~1446 BC", title: "The Exodus", text: "Moses leads the Israelites out of Egypt. They receive the Law at Sinai and wander in the wilderness.", anim: "🌊 → 🏔️ Sinai" },
+  { year: "~1406 BC", title: "Conquest under Joshua", text: "Joshua leads the people into the Promised Land. Jericho falls and the tribes receive their allotments.", anim: "🏰 → 📜 Land" },
+  { year: "~1375–1050 BC", title: "Period of the Judges", text: "There is no king in Israel. Cycles of apostasy, oppression, and deliverance. Judges include Deborah, Gideon, Jephthah, and Samson.", anim: "⚖️ Judges" },
+  { year: "~1080–1050 BC", title: "Samuel the Prophet-Judge", text: "Samuel judges Israel. The ark is captured and returned. The people demand a king.", anim: "📖 → 👑" },
+  { year: "1050 BC", title: "Call for a King", text: "The stage is set for the United Kingdom under Saul, David, and Solomon.", anim: "👑 United" }
 ];
+
+const BIBLICAL_NAMES = ["Eliab", "Abner", "Amaziah", "Boaz", "Caleb", "Daniel", "Elijah", "Gideon", "Hosea", "Isaac", "Joel", "Micah", "Nathan", "Obadiah", "Phinehas", "Reuben", "Samuel", "Tobiah", "Uriah", "Zechariah"];
 
 const game = {
   player: null,
@@ -81,6 +83,12 @@ function init() {
     if (el) el.addEventListener('change', () => { game.priorities[p] = el.checked; });
   });
 
+  // Randomize name
+  const nameInput = document.getElementById('player-name');
+  if (nameInput && !nameInput.value) {
+    nameInput.value = BIBLICAL_NAMES[Math.floor(Math.random() * BIBLICAL_NAMES.length)];
+  }
+
   // Main game URL QR
   const url = window.location.href.split('?')[0];
   document.getElementById('main-url').textContent = url;
@@ -102,10 +110,8 @@ function showNextIntro() {
   const ev = INTRO_EVENTS[game.introIndex];
   content.innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
   progress.textContent = `Segment ${game.introIndex + 1} of ${INTRO_EVENTS.length}`;
-  // Simple graphical "animation" — colored banner with key phrase
-  const colors = ['#5d4037','#6d4c41','#8d6e63','#a1887f','#4e342e','#3e2723','#bf360c'];
-  visual.style.background = colors[game.introIndex % colors.length];
-  visual.textContent = ev.title.split(' ').slice(0, 3).join(' ');
+  // Graphical animation scene
+  visual.innerHTML = `<div class="anim-scene">${ev.anim || ev.title}</div>`;
   game.introIndex++;
   introTimer = setTimeout(showNextIntro, 7000);
 }
@@ -223,6 +229,7 @@ function startGame() {
 
   document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('game-screen').classList.remove('hidden');
+  document.getElementById('intro-screen').classList.add('hidden');
 
   updateStatus();
   updateTimeline();
