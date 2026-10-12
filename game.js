@@ -6,7 +6,7 @@ const INTRO_EVENTS = [
   { year: "~1700 BC", title: "Joseph in Egypt", text: "Joseph is sold into slavery, rises to power under Pharaoh, and brings his family (including Jacob/Israel) into Egypt during a famine. The people of Israel settle in Goshen.", video: "intro/joseph.mp4" },
   { year: "~1446 BC", title: "The Exodus", text: "Moses leads the Israelites out of Egypt. They receive the Law at Sinai and wander in the wilderness.", video: "intro/exodus.mp4" },
   { year: "~1406 BC", title: "Conquest under Joshua", text: "Joshua leads the people into the Promised Land. Jericho falls and the tribes receive their allotments.", video: "intro/joshua.mp4" },
-  { year: "~1375–1050 BC", title: "Period of the Judges", text: "There is no king in Israel. Cycles of apostasy, oppression, and deliverance. Judges include Deborah, Gideon, Jephthah, and Samson.", video: "intro/judges.mp4" },
+  { year: "~1375–1050 BC", title: "Period of the Judges", text: "There is no king in Israel. Cycles of apostasy, oppression, and deliverance. Judges include Deborah, Gideon, Jephthah, and Samson.", video: "intro/judges.mp4?v=2" },
   { year: "~1080–1050 BC", title: "Samuel the Prophet-Judge", text: "Samuel judges Israel. The ark is captured and returned. The people demand a king.", video: "intro/samuel.mp4" },
   { year: "1050 BC", title: "Call for a King", text: "The stage is set for the United Kingdom under Saul, David, and Solomon.", video: "intro/king.mp4" }
 ];
