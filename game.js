@@ -83,9 +83,9 @@ function init() {
     if (el) el.addEventListener('change', () => { game.priorities[p] = el.checked; });
   });
 
-  // Randomize name
+  // Randomize name always on load
   const nameInput = document.getElementById('player-name');
-  if (nameInput && !nameInput.value) {
+  if (nameInput) {
     nameInput.value = BIBLICAL_NAMES[Math.floor(Math.random() * BIBLICAL_NAMES.length)];
   }
 
@@ -290,11 +290,46 @@ function updateTimeline() {
   const upcomingList = document.getElementById('upcoming-list');
   if (!pastList || !upcomingList) return;
 
-  const past = TIMELINE.filter(e => e.year >= game.year && e.year > game.year - 80).slice(-5).reverse();
+  // Past = earlier years (higher BC numbers)
+  const past = TIMELINE.filter(e => e.year > game.year).slice(-4).reverse();
+  // Upcoming = later years (lower BC numbers)
   const upcoming = TIMELINE.filter(e => e.year < game.year).slice(0, 4);
 
   pastList.innerHTML = past.map(e => `<li class="past-event">${e.year} BC — ${e.title}</li>`).join('') || '<li>None yet</li>';
   upcomingList.innerHTML = upcoming.map(e => `<li class="upcoming-event">${e.year} BC — ${e.title}</li>`).join('') || '<li>Approaching the end of the period</li>';
+
+  // Scrolling line visualization
+  const bar = document.getElementById('timeline-bar');
+  const progress = document.getElementById('timeline-progress');
+  const nowMarker = document.getElementById('timeline-now');
+  const labels = document.getElementById('timeline-labels');
+  if (!bar || !progress || !nowMarker) return;
+
+  const startYear = 1050;
+  const endYear = 690;
+  const totalSpan = startYear - endYear;
+  const elapsed = startYear - game.year;
+  const pct = Math.max(0, Math.min(100, (elapsed / totalSpan) * 100));
+
+  progress.style.width = pct + '%';
+  nowMarker.style.left = pct + '%';
+
+  // Place event dots
+  bar.querySelectorAll('.timeline-event-dot').forEach(d => d.remove());
+  TIMELINE.forEach(e => {
+    const eventPct = ((startYear - e.year) / totalSpan) * 100;
+    if (eventPct >= 0 && eventPct <= 100) {
+      const dot = document.createElement('div');
+      dot.className = 'timeline-event-dot';
+      dot.style.left = eventPct + '%';
+      dot.title = `${e.year} BC: ${e.title}`;
+      bar.appendChild(dot);
+    }
+  });
+
+  if (labels) {
+    labels.innerHTML = `<span>${startYear} BC</span><span>Now: ${game.year} BC</span><span>${endYear} BC</span>`;
+  }
 }
 
 function addNarrative(text) {

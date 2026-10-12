@@ -207,11 +207,54 @@ button:hover {
   min-height: 300px;
 }
 
-.timeline-panel {
-  max-height: 180px;
-  overflow-y: auto;
-  font-size: 0.9em;
-  margin-bottom: 10px;
+#timeline-bar-container {
+  margin: 10px 0 15px;
+  position: relative;
+}
+
+#timeline-bar {
+  height: 8px;
+  background: #d7ccc8;
+  border-radius: 4px;
+  position: relative;
+  overflow: visible;
+}
+
+#timeline-progress {
+  height: 100%;
+  background: #8b4513;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+#timeline-now {
+  position: absolute;
+  top: -6px;
+  width: 4px;
+  height: 20px;
+  background: #c62828;
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+
+#timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7em;
+  margin-top: 4px;
+  color: #5d4037;
+}
+
+.timeline-event-dot {
+  position: absolute;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  background: #1565c0;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  cursor: help;
 }
 
 .timeline-section ul {
