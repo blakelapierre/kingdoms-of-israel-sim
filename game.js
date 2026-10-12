@@ -29,7 +29,7 @@ const game = {
   isHost: false,
   roomCode: null,
   introIndex: 0,
-  introSound: false,
+  introSound: true,
   generation: 1,
   priorities: { farm: true, trade: false, family: false, pray: false },
   mapMarkers: [] // dynamic historical markers
@@ -61,11 +61,10 @@ const TIMELINE = [
 ];
 
 function init() {
-  document.getElementById('skip-intro').addEventListener('click', () => { clearTimeouts(); finishIntro(); });
+  document.getElementById('skip-intro').addEventListener('click', () => finishIntro());
   document.getElementById('intro-prev').addEventListener('click', () => showIntroSegment(game.introIndex - 1));
   document.getElementById('intro-next').addEventListener('click', () => showIntroSegment(game.introIndex + 1));
-  document.getElementById('intro-sound').addEventListener('click', () => enableIntroSound());
-  document.getElementById('intro-screen').addEventListener('pointerdown', () => enableIntroSound());
+  document.getElementById('intro-start').addEventListener('click', () => startCurrentIntro());
   document.getElementById('start-btn').addEventListener('click', startGame);
   document.getElementById('host-btn').addEventListener('click', hostRoom);
   document.getElementById('join-btn').addEventListener('click', joinRoom);
@@ -103,52 +102,98 @@ function init() {
   playIntro();
 }
 
-let introTimer = null;
+let introVideos = new Map();
+
 function playIntro() {
+  preloadIntro(0);
+  preloadIntro(1);
   showIntroSegment(0);
 }
 function mediaUrl(rel) {
   return new URL(rel, window.location.href).href;
 }
-function enableIntroSound() {
-  game.introSound = true;
-  const video = document.getElementById('intro-video');
-  const hint = document.getElementById('intro-sound-hint');
-  if (hint) hint.textContent = 'Sound is on.';
+function preloadIntro(index) {
+  if (index < 0 || index >= INTRO_EVENTS.length) return null;
+  const src = mediaUrl(INTRO_EVENTS[index].video);
+  let video = introVideos.get(src);
+  if (!video) {
+    video = document.createElement('video');
+    video.className = 'intro-video';
+    video.playsInline = true;
+    video.controls = true;
+    video.preload = 'auto';
+    video.src = src;
+    video.load();
+    introVideos.set(src, video);
+  }
+  return video;
+}
+function showStartPrompt() {
+  document.getElementById('intro-start').classList.remove('hidden');
+}
+function hideStartPrompt() {
+  document.getElementById('intro-start').classList.add('hidden');
+}
+function startCurrentIntro() {
+  const video = preloadIntro(game.introIndex);
   if (!video) return;
+  hideStartPrompt();
   video.muted = false;
   video.volume = 1;
   const pending = video.play();
-  if (pending && pending.catch) pending.catch(() => {});
+  if (pending && pending.catch) pending.catch(() => showStartPrompt());
 }
 function showIntroSegment(index) {
-  clearTimeouts();
   if (index >= INTRO_EVENTS.length) { finishIntro(); return; }
   if (index < 0) index = 0;
   game.introIndex = index;
   const ev = INTRO_EVENTS[index];
   document.getElementById('intro-content').innerHTML = `<strong>${ev.year}</strong><br><em>${ev.title}</em><br><br>${ev.text}`;
   document.getElementById('intro-progress').textContent = `Segment ${index + 1} of ${INTRO_EVENTS.length}`;
-  const video = document.getElementById('intro-video');
-  if (video && ev.video) {
-    const src = mediaUrl(ev.video);
-    video.muted = !game.introSound;
-    video.onerror = () => {
-      document.getElementById('intro-progress').textContent = `Could not load video (${src})`;
-    };
-    video.onloadeddata = () => {
-      const pending = video.play();
-      if (pending && pending.catch) pending.catch(() => {});
-    };
-    if (video.getAttribute('src') !== src) video.src = src;
-    else video.play().catch(() => {});
-  }
-  introTimer = setTimeout(() => showIntroSegment(index + 1), 12000);
+
+  const video = preloadIntro(index);
+  const wrap = document.getElementById('intro-video-wrap');
+  const startBtn = document.getElementById('intro-start');
+  wrap.querySelectorAll('video').forEach(other => {
+    if (other !== video) {
+      other.pause();
+      other.onended = null;
+    }
+  });
+  if (video.parentNode !== wrap) wrap.insertBefore(video, startBtn);
+
+  video.muted = false;
+  video.volume = 1;
+  video.loop = false;
+  video.onended = () => {
+    if (game.introIndex === index) showIntroSegment(index + 1);
+  };
+  video.onerror = () => {
+    document.getElementById('intro-progress').textContent = `Could not load video (${video.src})`;
+  };
+
+  preloadIntro(index + 1);
+
+  const begin = () => {
+    if (game.introIndex !== index) return;
+    try { if (video.currentTime > 0.05) video.currentTime = 0; } catch (err) {}
+    const pending = video.play();
+    if (pending && pending.then) {
+      pending.then(() => hideStartPrompt()).catch(() => {
+        if (game.introIndex !== index) return;
+        video.pause();
+        showStartPrompt();
+      });
+    }
+  };
+  if (video.readyState >= 2) begin();
+  else video.addEventListener('canplay', begin, { once: true });
 }
-function clearTimeouts() { if (introTimer) clearTimeout(introTimer); }
 function finishIntro() {
-  const video = document.getElementById('intro-video');
-  if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
+  introVideos.forEach(video => {
+    video.pause();
+    video.onended = null;
+  });
   document.getElementById('intro-screen').classList.add('hidden');
   document.getElementById('start-screen').classList.remove('hidden');
 }

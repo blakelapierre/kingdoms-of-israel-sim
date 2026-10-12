@@ -62,11 +62,16 @@ header h1 {
   text-align: center;
 }
 
-.intro-video {
+.intro-video-wrap {
+  position: relative;
   width: min(100%, 640px);
+  margin: 10px auto;
+}
+
+.intro-video {
+  width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
-  margin: 10px auto;
   display: block;
   background: #1a120c;
   border-radius: 8px;
@@ -74,9 +79,14 @@ header h1 {
   object-fit: cover;
 }
 
-#intro-sound-hint {
-  font-size: 0.9em;
-  margin: 6px 0 0;
+.intro-start {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-size: 1.15em;
+  padding: 12px 22px;
 }
 
 .qr-box {
